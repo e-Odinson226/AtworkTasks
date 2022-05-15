@@ -111,9 +111,9 @@ while True:
                                                            distortionMatrix )
             
             p1 = (int(nose2D[0]), int(nose2D[1]))
-            p2 = (int(nose2D[0] + y * 10) , int(nose2D[1] - x * 10))
+            p2 = (int(nose2D[0] + y * 30) , int(nose2D[1] - x * 30))
             
-            cv2.line(frame, p1, p2, (255, 0, 0), 3)
+            cv2.line(frame, p1, p2, (255, 255, 255), 8)
             
             # Draw face mesh as TESSELATION attribiute.
             mpDrawing.draw_landmarks(
