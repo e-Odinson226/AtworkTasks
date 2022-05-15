@@ -111,7 +111,7 @@ while True:
                                                            distortionMatrix )
             
             p1 = (int(nose2D[0]), int(nose2D[1]))
-            p2 = (int(nose3DProjection[0][0][0]+ y*30) , int(nose3DProjection[0][0][1]- x*30))
+            p2 = (int(nose3DProjection[0][0][0] + y*30 ) , int(nose3DProjection[0][0][1]- x*20))
             
             cv2.line(frame, p1, p2, (255, 255, 255), 8)
             
