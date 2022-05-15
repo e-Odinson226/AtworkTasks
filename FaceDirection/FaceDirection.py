@@ -104,11 +104,11 @@ while True:
             # pass
             
             # Display nose direction
-            nose3DProjection, jacobian = cv2.projectPoints(nose3D,
-                                                           rotationVector,
-                                                           translationVector,
-                                                           cameraMatrix,
-                                                           distortionMatrix )
+            #nose3DProjection, jacobian = cv2.projectPoints(nose3D,
+            #                                               rotationVector,
+            #                                               translationVector,
+            #                                               cameraMatrix,
+            #                                               distortionMatrix )
             
             p1 = (int(nose2D[0]), int(nose2D[1]))
             p2 = (int(nose2D[0] + y * 30) , int(nose2D[1] - x * 30))
