@@ -62,7 +62,7 @@ while True:
                 if idx == 33 or idx == 263 or idx == 1 or idx == 61 or idx == 291 or idx == 199:
                     if idx == 1:
                         nose2D = (landmark.x * frameW, landmark.y * frameH)
-                        nose3D = (landmark.x * frameW, landmark.y * frameH, landmark.z * 3000)
+                        nose3D = (landmark.x * frameW, landmark.y * frameH, landmark.z * 100)
             
                 x, y = int(landmark.x * frameW), int(landmark.y * frameH)
                 
@@ -104,14 +104,14 @@ while True:
             # pass
             
             # Display nose direction
-            #nose3DProjection, jacobian = cv2.projectPoints(nose3D,
-            #                                               rotationVector,
-            #                                               translationVector,
-            #                                               cameraMatrix,
-            #                                               distortionMatrix )
+            nose3DProjection, jacobian = cv2.projectPoints(nose3D,
+                                                           rotationVector,
+                                                           translationVector,
+                                                           cameraMatrix,
+                                                           distortionMatrix )
             
             p1 = (int(nose2D[0]), int(nose2D[1]))
-            p2 = (int(nose2D[0] + y * 30) , int(nose2D[1] - x * 30))
+            p2 = (int(nose3DProjection[0][0][0]+ y*30) , int(nose3DProjection[0][0][1]- x*30))
             
             cv2.line(frame, p1, p2, (255, 255, 255), 8)
             
