@@ -9,6 +9,12 @@ faceMesh = mpFaceMesh.FaceMesh(
                                min_detection_confidence=0.5,
                                min_tracking_confidence=0.5  )
 
+# Create instances of mediapipe drawing utilities.
+mpDrawing = mp.solutions.drawing_utils
+drawingSpec = mpDrawing.DrawingSpec(    
+                                    thickness=1,
+                                    circle_radius=1 )
+
 # Read feed from webcam and resize
 cap = cv2.VideoCapture(0)
 cap.set(3, 1080)
@@ -38,8 +44,16 @@ while True:
     # Check if results have been aquierd then:
     # Loop trough landmarks.
     if result.multi_face_landmarks:
-        for faceLandmark in result.multi_face_landmarks:
-            print(faceLandmark)
+        for faceLandmarks in result.multi_face_landmarks:
+            
+            
+            # Draw face mesh as OVAL attribiute.
+            mpDrawing.draw_landmarks(   
+                                     frame,
+                                     faceLandmarks,
+                                     mpFaceMesh.FACEMESH_FACE_OVAL,
+                                     drawingSpec,
+                                     drawingSpec)
     
     
     #cv2.imshow("Capture", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
