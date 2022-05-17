@@ -1,3 +1,6 @@
+from inspect import getcallargs
+from itertools import count
+from matplotlib.pyplot import get
 import mediapipe as mp
 import cv2
 import numpy as np
@@ -16,6 +19,12 @@ cv2.createTrackbar("SATmax", "FrameSetup", 255, 255, empty)
 cv2.createTrackbar("VALmin", "FrameSetup", 0, 255, empty)
 cv2.createTrackbar("VALmax", "FrameSetup", 93, 255, empty)
 
+def getContour(img):
+    contours, heirarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        cv2.drawContours(frameContour, contour, -1, (255, 255, 0),3 )
+
 while(True):
     # Read frames and validate reading ----------    
     succ, frame = cap.read()
@@ -23,8 +32,18 @@ while(True):
         print("failed to read input frames")
         break
     
+    frameContour = frame.copy()
+    # Create and represent hsv version of input frames ---------
     frameHSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     cv2.imshow("feed", frameHSV)
+    
+    # Create and represent canny version of input frames ---------
+    frameCanny = cv2.Canny(cv2.GaussianBlur(frame,(25, 25), 5), 7, 7)
+    cv2.imshow("Canny", frameCanny)
+    
+    # Create and represent thresh version of input frames ---------
+    frameCanny = cv2.threshold()
+    cv2.imshow("Canny", frameCanny)
     
     # Read frames and validate reading ----------
     HUEmin = cv2.getTrackbarPos("HUEmin", "FrameSetup")
@@ -42,37 +61,21 @@ while(True):
     masked = cv2.inRange(frameHSV, valMin, valMax )
     cv2.imshow("masked", masked)
     
+    
+    cv2.imshow("masked", masked)
+    
+    
     #height, width, fra = frame.shape
     blankImage = np.zeros(frame.shape, np.uint8)
-
-    contours = cv2.findContours(masked, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    getContour(frame)
+    getContour(blankImage)
+    
+    # Create and represent thresh version of input frames ---------
+    frameCanny = cv2.Canny(, 7, 7)
+    cv2.imshow("Canny", frameCanny)
+    
     #contours = contours[0] if len(contours) == 2 else contours[1]
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
-        print(len(approx))
-        if len(approx)==5:
-            print("Blue = pentagon")
-            cv2.drawContours(blankImage,[contour],0,255,-1)
-        elif len(approx)==3:
-            print("Green = triangle")
-            cv2.drawContours(blankImage,[contour],0,(0,255,0),-1)
-        elif len(approx)==4:
-            print("Red = square")
-            cv2.drawContours(blankImage,[contour],0,(0,0,255),-1)
-        elif len(approx) == 6:
-            print("Cyan = Hexa")
-            cv2.drawContours(blankImage,[contour],0,(255,255,0),-1)
-        elif len(approx) == 8:
-            print("White = Octa")
-            cv2.drawContours(blankImage,[contour],0,(255,255,255),-1)
-        elif len(approx) > 12:
-            print("Yellow = circle")
-            cv2.drawContours(blankImage,[contour],0,(0,255,255),-1)
-    
-    
-    cv2.imshow("Drawed shapes", blankImage)
-    
+    #approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
     
     if cv2.waitKey(5) & 0xFF == ord('q'):
         break
