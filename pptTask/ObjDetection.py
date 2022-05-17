@@ -9,12 +9,12 @@ def empty(tst):
     return tst
 cv2.namedWindow("FrameSetup")
 cv2.resizeWindow("FrameSetup", 520, 170)
-cv2.createTrackbar("HUEmin", "FrameSetup", 0, 179, empty)
+cv2.createTrackbar("HUEmin", "FrameSetup", 44, 179, empty)
 cv2.createTrackbar("HUEmax", "FrameSetup", 179, 179, empty)
 cv2.createTrackbar("SATmin", "FrameSetup", 0, 255, empty)
 cv2.createTrackbar("SATmax", "FrameSetup", 255, 255, empty)
 cv2.createTrackbar("VALmin", "FrameSetup", 0, 255, empty)
-cv2.createTrackbar("VALmax", "FrameSetup", 255, 255, empty)
+cv2.createTrackbar("VALmax", "FrameSetup", 93, 255, empty)
 
 while(True):
     # Read frames and validate reading ----------    
