@@ -49,8 +49,8 @@ while(True):
     #cv2.imshow("Gray", frameGray)
     
     # Create and represent thresh version of input frames ---------
-    frameThresh = cv2.threshold(frameGray, 0, 255, cv2.THRESH_OTSU )
-    cv2.imshow("Thresh", frameThresh[1])
+    frameThresh = cv2.threshold(frameGray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU )[1]
+    cv2.imshow("Thresh", frameThresh)
     
     
     # Read frames and validate reading ----------
@@ -71,8 +71,15 @@ while(True):
     
     
     #height, width, fra = frame.shape
-    blankImage = np.zeros(frame.shape, np.uint8)
+    #blankImage = np.zeros(frame.shape, np.uint8)
     #showContours(frame, 'frame')
+    contours, heirarchy = cv2.findContours(frameThresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        
+        cv2.drawContours(frame, [contour], -1, (255, 255, 0),3 )
+        print(area)
+    cv2.imshow('frame', frame)
     #showContours(blankImage, 'blankImage')
     #showContours(frameThresh)
     
