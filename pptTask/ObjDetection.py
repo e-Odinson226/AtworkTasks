@@ -19,20 +19,33 @@ cv2.createTrackbar("SATmax", "FrameSetup", 255, 255, empty)
 cv2.createTrackbar("VALmin", "FrameSetup", 0, 255, empty)
 cv2.createTrackbar("VALmax", "FrameSetup", 93, 255, empty)
 
-def showContours(img):
-    contours, heirarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        cv2.drawContours(frameContour, contour, -1, (255, 255, 0),3 )
-        print(area)
-
 def showContours(img, frameContour):
     contours, heirarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
         area = cv2.contourArea(contour)
-        
-        cv2.drawContours(frameContour, [contour], -1, (255, 255, 0),3 )
-        print(area)
+        if area > 1000:
+            peri = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.04*peri , True)
+            #cv2.drawContours(frameContour, [contour], -1, (255, 255, 0),3 )
+            print(f'length approx:{len(approx)} | area:{area}')
+            if len(approx)==5:
+                print("Blue = pentagon")
+                cv2.drawContours(frameContour,[contour],0,255,-1)
+            elif len(approx)==3:
+                print("Green = triangle")
+                cv2.drawContours(frameContour,[contour],0,(0,255,0),-1)
+            elif len(approx)==4:
+                print("Red = square")
+                cv2.drawContours(frameContour,[contour],0,(0,0,255),-1)
+            elif len(approx) == 6:
+                print("Cyan = Hexa")
+                cv2.drawContours(frameContour,[contour],0,(255,255,0),-1)
+            elif len(approx) == 8:
+                print("White = Octa")
+                cv2.drawContours(frameContour,[contour],0,(255,255,255),-1)
+            elif len(approx) > 12:
+                print("Yellow = circle")
+                cv2.drawContours(frameContour,[contour],0,(0,255,255),-1)
     
 
 while(True):
@@ -80,9 +93,9 @@ while(True):
     
     #height, width, fra = frame.shape
     #blankImage = np.zeros(frame.shape, np.uint8)
-    showContours(frameThresh, threshFrameContour)
-    cv2.imshow('maskedFrameContour', maskedFrameContour)
     showContours(frameMasked, maskedFrameContour)
+    cv2.imshow('maskedFrameContour', maskedFrameContour)
+    showContours(frameThresh, threshFrameContour)
     cv2.imshow('threshFrameContour', threshFrameContour)
     #showContours(blankImage, 'blankImage')
     #showContours(frameThresh)
@@ -93,7 +106,7 @@ while(True):
 
     
     
-    #approx = cv2.approxPolyDP(cnt,0.01*cv2.arcLength(cnt,True),True)
+    #approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
 
     #contours = contours[0] if len(contours) == 2 else contours[1]
     #approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
