@@ -19,11 +19,14 @@ cv2.createTrackbar("SATmax", "FrameSetup", 255, 255, empty)
 cv2.createTrackbar("VALmin", "FrameSetup", 0, 255, empty)
 cv2.createTrackbar("VALmax", "FrameSetup", 93, 255, empty)
 
-def getContour(img):
+def showContours(img):
     contours, heirarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
         area = cv2.contourArea(contour)
         cv2.drawContours(frameContour, contour, -1, (255, 255, 0),3 )
+        print(area)
+
+    
 
 while(True):
     # Read frames and validate reading ----------    
@@ -35,15 +38,20 @@ while(True):
     frameContour = frame.copy()
     # Create and represent hsv version of input frames ---------
     frameHSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    cv2.imshow("feed", frameHSV)
+    #cv2.imshow("feed", frameHSV)
     
     # Create and represent canny version of input frames ---------
     frameCanny = cv2.Canny(cv2.GaussianBlur(frame,(25, 25), 5), 7, 7)
-    cv2.imshow("Canny", frameCanny)
+    #cv2.imshow("Canny", frameCanny)
+    
+    # Create and represent threshed version of input frames ---------
+    frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #cv2.imshow("Gray", frameGray)
     
     # Create and represent thresh version of input frames ---------
-    frameCanny = cv2.threshold()
-    cv2.imshow("Canny", frameCanny)
+    frameThresh = cv2.threshold(frameGray, 0, 255, cv2.THRESH_OTSU )
+    cv2.imshow("Thresh", frameThresh[1])
+    
     
     # Read frames and validate reading ----------
     HUEmin = cv2.getTrackbarPos("HUEmin", "FrameSetup")
@@ -54,26 +62,28 @@ while(True):
     VALmax = cv2.getTrackbarPos("VALmax", "FrameSetup")
     valMin = np.array([HUEmin, SATmin, VALmin])
     valMax = np.array([HUEmax, SATmax, VALmax])
-    print(f'values min: {valMin}')
-    print(f'values max: {valMax}')
+    #print(f'values min: {valMin}')
+    #print(f'values max: {valMax}')
     
     # Implement values on the masked frame -----------------
     masked = cv2.inRange(frameHSV, valMin, valMax )
     cv2.imshow("masked", masked)
     
     
-    cv2.imshow("masked", masked)
-    
-    
     #height, width, fra = frame.shape
     blankImage = np.zeros(frame.shape, np.uint8)
-    getContour(frame)
-    getContour(blankImage)
+    #showContours(frame, 'frame')
+    #showContours(blankImage, 'blankImage')
+    #showContours(frameThresh)
     
     # Create and represent thresh version of input frames ---------
-    frameCanny = cv2.Canny(, 7, 7)
-    cv2.imshow("Canny", frameCanny)
+
+
+
     
+    
+    #approx = cv2.approxPolyDP(cnt,0.01*cv2.arcLength(cnt,True),True)
+
     #contours = contours[0] if len(contours) == 2 else contours[1]
     #approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
     
