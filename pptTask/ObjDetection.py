@@ -26,6 +26,13 @@ def showContours(img):
         cv2.drawContours(frameContour, contour, -1, (255, 255, 0),3 )
         print(area)
 
+def showContours(img, frameContour):
+    contours, heirarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        
+        cv2.drawContours(frameContour, [contour], -1, (255, 255, 0),3 )
+        print(area)
     
 
 while(True):
@@ -35,7 +42,8 @@ while(True):
         print("failed to read input frames")
         break
     
-    frameContour = frame.copy()
+    maskedFrameContour = frame.copy()
+    threshFrameContour = frame.copy()
     # Create and represent hsv version of input frames ---------
     frameHSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     #cv2.imshow("feed", frameHSV)
@@ -66,20 +74,16 @@ while(True):
     #print(f'values max: {valMax}')
     
     # Implement values on the masked frame -----------------
-    masked = cv2.inRange(frameHSV, valMin, valMax )
-    cv2.imshow("masked", masked)
+    frameMasked = cv2.inRange(frameHSV, valMin, valMax )
+    cv2.imshow("masked", frameMasked)
     
     
     #height, width, fra = frame.shape
     #blankImage = np.zeros(frame.shape, np.uint8)
-    #showContours(frame, 'frame')
-    contours, heirarchy = cv2.findContours(frameThresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        
-        cv2.drawContours(frame, [contour], -1, (255, 255, 0),3 )
-        print(area)
-    cv2.imshow('frame', frame)
+    showContours(frameThresh, threshFrameContour)
+    cv2.imshow('maskedFrameContour', maskedFrameContour)
+    showContours(frameMasked, maskedFrameContour)
+    cv2.imshow('threshFrameContour', threshFrameContour)
     #showContours(blankImage, 'blankImage')
     #showContours(frameThresh)
     
