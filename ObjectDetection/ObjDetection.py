@@ -70,7 +70,7 @@ while(True):
     #cv2.imshow("Gray", frameGray)
     
     # Create and represent thresh version of input frames ---------
-    frameThresh = cv2.threshold(frameGray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU )[1]
+    frameThresh = cv2.threshold(cv2.GaussianBlur(frameGray, (31, 31), cv2.BORDER_DEFAULT), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU )[1]
     cv2.imshow("Thresh", frameThresh)
     
     
@@ -102,11 +102,6 @@ while(True):
     
     # Create and represent thresh version of input frames ---------
 
-
-
-    
-    
-    #approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
 
     #contours = contours[0] if len(contours) == 2 else contours[1]
     #approx = cv2.approxPolyDP(contour,0.01*cv2.arcLength(contour,True),True)
