@@ -42,8 +42,14 @@ trackbar(minval, maxval)
 
 frameHSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+
 frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-framThresh = cv2.threshold(frameGray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+frameBlured = cv2.medianBlur(frameGray, 5)
+#frameBlured = cv2.GaussianBlur(frameGray, (9, 9), 0)
+
+cv2.imshow("frameBlured", frameBlured)
+frameThresh = cv2.threshold(frameBlured, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+#frameThresh = cv2.adaptiveThreshold(frameBlured, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
 while True:
     # Read frames and validate reading ----------
@@ -58,15 +64,22 @@ while True:
 
     # Implement values on the masked frame -----------------
     masked = cv2.inRange(frameHSV, valMin, valMax)
-    cnts = cv2.findContours(masked, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-    #for cnt in cnts:
-    #    approx = cv2.approxPolyDP(cnt, 0.01*cv2.arcLength(cnt,True), True)
-    #    #print(len(approx))
-    #    cv2.drawContours(masked, [cnt], 0, (255, 0, 0), -1)
+    cnts, hierarchy = cv2.findContours(frameThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     
-    cv2.imshow("feed", frameHSV)
-    cv2.imshow("masked", masked)
+    for cnt in cnts:
+        area = cv2.contourArea(cnt)
+        if area > 500:
+            approx = cv2.approxPolyDP(cnt, 0.01*cv2.arcLength(cnt,True), True)
+            cv2.drawContours(frame, [cnt], -1, (255, 0, 0), 2)
+            print(approx)
+            print("---------------------------------------------------------------")
+    
+    cv2.imshow("frameThresh", frameThresh)
+    cv2.imshow("feed", frame)
+    #cv2.imshow("frameBlured", frameBlured)
+    
+    #cv2.imshow("masked", masked)
 
     if cv2.waitKey(5) & 0xFF == ord('q'):
         break
