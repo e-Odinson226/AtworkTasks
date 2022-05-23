@@ -2,6 +2,7 @@ import os
 import mediapipe as mp
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
 def empty(tst):
             return tst
@@ -20,6 +21,10 @@ def trackbar(minval, maxval, frameSize=[520, 170]):
 
 
 cwd = os.getcwd()
+print('------------------------')
+print(cwd)
+print('------------------------')
+
 photoshot = os.path.join(cwd, 'shapes_on_canvas.jpg')
 frame = cv2.imread(photoshot)
 
@@ -72,14 +77,19 @@ while True:
         if area > 500:
             approx = cv2.approxPolyDP(cnt, 0.01*cv2.arcLength(cnt,True), True)
             cv2.drawContours(frame, [cnt], -1, (255, 0, 0), 2)
-            print(approx)
-            print("---------------------------------------------------------------")
+            #print(approx)
+            #print("---------------------------------------------------------------")
+    
+    #images = [frameBlured, frameThresh, frame]
+    #titles = ['frameBlured', 'frameThresh', 'frame']
+    #for i in range(3):
+    #    plt.subplot(2,2,i+1),plt.imshow(images[i],'gray')
+    #    plt.title(titles[i])
+    #    plt.xticks([]),plt.yticks([])
+    #plt.show()
     
     cv2.imshow("frameThresh", frameThresh)
     cv2.imshow("feed", frame)
-    #cv2.imshow("frameBlured", frameBlured)
-    
-    #cv2.imshow("masked", masked)
 
     if cv2.waitKey(5) & 0xFF == ord('q'):
         break
