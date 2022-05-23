@@ -20,13 +20,12 @@ def trackbar(minval, maxval, frameSize=[520, 170]):
     cv2.createTrackbar("VALmax", "FrameSetup", maxval['VAL'][0], maxval['VAL'][1], empty)
 
 
-cwd = os.getcwd()
-print('------------------------')
-print(cwd)
-print('------------------------')
-
-photoshot = os.path.join(cwd, 'shapes_on_canvas.jpg')
-frame = cv2.imread(photoshot)
+try:
+    cwd = os.getcwd()
+    photoshot = os.path.join(cwd, 'shapes_on_canvas.jpg')
+    frame = cv2.imread(photoshot)
+except:
+    print("Can't open file.")
 
 # resize frame
 scale = 20
@@ -53,7 +52,8 @@ frameBlured = cv2.medianBlur(frameGray, 5)
 #frameBlured = cv2.GaussianBlur(frameGray, (9, 9), 0)
 
 cv2.imshow("frameBlured", frameBlured)
-frameThresh = cv2.threshold(frameBlured, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+#frameThresh = cv2.threshold(frameBlured, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+frameThresh = cv2.threshold(frameBlured, 170, 255, cv2.THRESH_BINARY_INV)[1]
 #frameThresh = cv2.adaptiveThreshold(frameBlured, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
 while True:
@@ -69,7 +69,9 @@ while True:
 
     # Implement values on the masked frame -----------------
     masked = cv2.inRange(frameHSV, valMin, valMax)
-    cnts, hierarchy = cv2.findContours(frameThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cnts, hierarchy = cv2.findContours( frameThresh,
+                                        cv2.RETR_TREE,
+                                        cv2.CHAIN_APPROX_SIMPLE  )
     #cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     
     for cnt in cnts:
