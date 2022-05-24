@@ -1,5 +1,5 @@
 def empty(tst):
-            return tst
+        pass
 
 def trackbar(minval, maxval, frameSize=[520, 170]):
     frameSize[0] = 0
