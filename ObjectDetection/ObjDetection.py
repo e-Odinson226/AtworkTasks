@@ -85,7 +85,7 @@ while True:
     frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
     #frameBlured = cv2.medianBlur(frame, 5)
-    frameBlured = cv2.GaussianBlur(frameGray, (7, 7), 0)
+    frameBlured = cv2.GaussianBlur(frameGray, (11, 11), 0)
 
 
     #frameThresh = cv2.threshold(frameBlured, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
@@ -98,7 +98,7 @@ while True:
     frameThresh = cv2.Canny(frameBlured, cannyT1, cannyT2)
     cv2.imshow("frameThresh", frameThresh)
     
-    #frameDilate = cv2.dilate(frameThresh, kernel, iterations=1)
+    frameDilate = cv2.dilate(frameThresh, kernel, iterations=2)
     #cv2.imshow("Dilated", frameDilate)
     
 
@@ -121,10 +121,13 @@ while True:
     #    plt.title(titles[i])
     #    plt.xticks([]),plt.yticks([])
     #plt.show()
-            
+
+    end = time.time()
+    fps = 1 /(end-begin)
+    cv2.putText(frame, f"fps:{int(fps)}", (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (20,20,20), 2)
     
     cv2.imshow("frameThresh", frameThresh)
     cv2.imshow("feed", frame)
-
+    
     if cv2.waitKey(5) & 0xFF == ord('q'):
         break
