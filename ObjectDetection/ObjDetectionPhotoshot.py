@@ -16,19 +16,21 @@ def trackbar(minval, maxval, frameSize=[520, 170]):
     cv2.createTrackbar("Canny t2", "FrameSetup", maxval['canny'][0], maxval['canny'][1], empty)
 
 # Create Trackbars -----------
-minval = {"canny":(20, 254)}
-maxval = {"canny":(100, 254)}
+minval = {"canny":(86, 254)}
+maxval = {"canny":(203, 254)}
 trackbar(minval, maxval)
 
 def detectShape(contour):
     shape = "unidentified"
     arcLength = cv2.arcLength(contour,True)
-    approx = cv2.approxPolyDP(contour, 0.01*arcLength, True)    
-    
+    approx = cv2.approxPolyDP(contour, 0.01*arcLength, True)
+    cv2.drawContours(frame, [contour], 0, (20, 250, 200), 3)
+    (x, y, w, h) = cv2.boundingRect(contour)
+    print(len(approx))
     if len(approx) == 3:
         shape = "triangle"
     elif len(approx) == 4:
-        (x, y, w, h) = cv2.boundingRect(contour)
+        
         ratio = w / h
         shape = "square" if ratio > 0.95 and ratio < 1.05 else "rectangle"
     elif len(approx) == 5:
@@ -43,15 +45,26 @@ def detectShape(contour):
     elif len(approx) == 20:
         
         shape = "Bracket"
-    #cv2.rectangle(frame, x, y, (150,0,150), 2)
+    cv2.rectangle(frame, (x, y), (x + w, y + h), (150,0,150), 2)
+    cv2.putText(frame,
+                f"corners: {len(approx)}",
+                (x , y-30),
+                cv2.FONT_HERSHEY_COMPLEX, 1,
+                (150,0,150), 2)
+    
+    cv2.putText(frame,
+                f"shape:{shape}",
+                (x , y-10),
+                cv2.FONT_HERSHEY_COMPLEX, 1,
+                (150,0,150), 2)
     return shape
 
 try:
     BASE_DIR = Path(__file__).resolve().parent
-    photoshot = os.path.join(BASE_DIR, 'shapes/screw.jpg')
+    photoshot = os.path.join(BASE_DIR, 'shapes/shapes_on_canvas_croped.jpg')
     print(photoshot)
     frame = cv2.imread(photoshot)
-    scale = 80
+    scale = 20
     height = int(frame.shape[0] * scale / 100)
     width = int(frame.shape[1] * scale / 100)
     frame = cv2.resize(frame, (width, height), cv2.INTER_AREA)
@@ -71,34 +84,29 @@ frameGray = cv2.cvtColor(frameBlured, cv2.COLOR_BGR2GRAY)
 #frameThresh = cv2.adaptiveThreshold(frameBlured, 255,
 #                                    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
 #                                    cv2.THRESH_BINARY, 11, 2)
-
 kernel = np.ones((5, 5))
 
 while True:
     cannyT1 = cv2.getTrackbarPos("Canny t1", "FrameSetup")
     cannyT2 = cv2.getTrackbarPos("Canny t2", "FrameSetup")
         
-    frameThresh = cv2.Canny(frameGray, cannyT2, cannyT2)
+    frameThresh = cv2.Canny(frameGray, cannyT1, cannyT2)
     cv2.imshow("Canny", frameThresh)
-    frameDilate = cv2.dilate(frameThresh, kernel, iterations=2)
-    cv2.imshow("Dilated", frameDilate)
+    frameDilate = cv2.dilate(frameThresh, kernel, iterations=1)
+    #cv2.imshow("Dilated", frameDilate)
     
 
     
-    contours, hierarchy = cv2.findContours( frameDilate,
-                                        cv2.RETR_TREE,
+    contours, hierarchy = cv2.findContours( frameThresh,
+                                        cv2.RETR_LIST,
                                         cv2.CHAIN_APPROX_SIMPLE  )
     #trackbar(minval, maxval)
     for contour in contours:
-        #print(contour)
-        cv2.drawContours(frame, [contour], 0, (20, 250, 200), 3)
         area = cv2.contourArea(contour)
-        if area > 1500:
+        if area > 200:
             shape = detectShape(contour)
             print(shape)
-            break
-            #momment = cv2.moments(contour)
-            #print(momment)
+        
             
 
             
