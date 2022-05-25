@@ -49,19 +49,15 @@ while True:
         frameThresh = ~frameThresh
         
     elif mode == 2:
-        loweBound = np.array([100, 200, 300])
-        loweBound = np.array([100, 200, 300])
-        frameThresh = cv2.inRange(frame, lowerBound, upperbBound)
-        
-    elif mode == 3:
-        loweBound = np.array([100, 200, 300])
-        loweBound = np.array([100, 200, 300])
-        frameThresh = cv2.inRange(frame, lowerBound, upperbBound)
-    
-    elif mode == 4:
-        loweBound = np.array([100, 200, 300])
-        loweBound = np.array([100, 200, 300])
-        frameThresh = cv2.inRange(frame, lowerBound, upperbBound)
+        HUEmin = cv2.getTrackbarPos("HUEmin", "FrameSetup")
+        HUEmax = cv2.getTrackbarPos("HUEmax", "FrameSetup")
+        SATmin = cv2.getTrackbarPos("SATmin", "FrameSetup")
+        SATmax = cv2.getTrackbarPos("SATmax", "FrameSetup")
+        VALmin = cv2.getTrackbarPos("VALmin", "FrameSetup")
+        VALmax = cv2.getTrackbarPos("VALmax", "FrameSetup")
+        lowerBound = np.array([HUEmin, SATmin, VALmin])
+        upperBound = np.array([HUEmax, SATmax, VALmax])
+        frameThresh = cv2.inRange(frame, lowerBound, upperBound)
     
     
     contours, hierarchy = cv2.findContours(frameThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
