@@ -1,3 +1,4 @@
+from re import U
 from xml.dom import HierarchyRequestErr
 import cv2
 import time
@@ -8,16 +9,11 @@ def empty(tst):
 
 def trackbar(modes = [0, 1, 2, 3], frameSize=[520, 170]):
     frame = cv2.namedWindow("Detection Mode")
-    cv2.resizeWindow("Detection Mode", frameSize[0], frameSize[1])
+    cv2.resizeWindow("Detail tweaks", frameSize[0], frameSize[1])
     cv2.createTrackbar("mode", "Detection Mode", modes[0], modes[3], empty)
     cv2.createTrackbar("thresh", "Detection Mode", 0, 255, empty)
 
 trackbar()
-
-#def findContour(inputFrame):
-#    contours, hierarchy = cv2.findContours(inputFrame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-#    for cont in contours:
-#        cv2.drawContours(frame, cont, -1, (255, 0, 255), 2)
 
 
 try:
@@ -27,11 +23,12 @@ try:
 except:
     print("Can't read video frame.")
 
-
 while True:
-    mode = cv2.getTrackbarPos("mode", "Detection Mode")
-    threshValue = cv2.getTrackbarPos("thresh", "Detection Mode")
-    print(threshValue)
+    mode = cv2.getTrackbarPos("mode", "Detail tweaks")
+    threshValue = cv2.getTrackbarPos("thresh", "Detail tweaks")
+    
+    
+    
     isReadOk, frame = cap.read()
     frame = cv2.flip(frame, 1)
     begin = time.time()
@@ -39,9 +36,34 @@ while True:
     # -----------------------------
     frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frameBlured = cv2.GaussianBlur(frameGray, (3, 3), 0)
-    frameThresh = cv2.threshold(frameBlured, threshValue, 255,
+    
+    if mode == 0:
+        frameThresh = cv2.threshold(frameBlured, threshValue, 255,
                                 cv2.THRESH_OTSU)[1]
-    #frameThresh = ~frameThresh
+        
+    elif mode == 1:
+        loweBound = np.array([100, 200, 300])
+        loweBound = np.array([100, 200, 300])
+        frameThresh = cv2.threshold(frameBlured, threshValue, 255,
+                                cv2.THRESH_BINARY_INV)[1]
+        frameThresh = ~frameThresh
+        
+    elif mode == 2:
+        loweBound = np.array([100, 200, 300])
+        loweBound = np.array([100, 200, 300])
+        frameThresh = cv2.inRange(frame, lowerBound, upperbBound)
+        
+    elif mode == 3:
+        loweBound = np.array([100, 200, 300])
+        loweBound = np.array([100, 200, 300])
+        frameThresh = cv2.inRange(frame, lowerBound, upperbBound)
+    
+    elif mode == 4:
+        loweBound = np.array([100, 200, 300])
+        loweBound = np.array([100, 200, 300])
+        frameThresh = cv2.inRange(frame, lowerBound, upperbBound)
+    
+    
     contours, hierarchy = cv2.findContours(frameThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cont in contours:
         cv2.drawContours(frame, cont, -1, (255, 0, 255), 2)
