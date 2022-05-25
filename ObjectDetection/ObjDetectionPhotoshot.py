@@ -76,6 +76,9 @@ kernel = np.ones((5, 5))
 #               Blurring
 #frameBlured = cv2.medianBlur(frame, 5)
 frameBlured = cv2.GaussianBlur(frame, (13, 13), 0)
+# gaussian isnt ok on 13
+# make it lower around 3-5
+
 cv2.imshow("frameBlured", frameBlured)
 
 frameGray = cv2.cvtColor(frameBlured, cv2.COLOR_BGR2GRAY)
