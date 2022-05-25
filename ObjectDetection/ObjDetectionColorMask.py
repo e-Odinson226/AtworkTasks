@@ -40,19 +40,21 @@ while True:
     frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frameBlured = cv2.GaussianBlur(frameGray, (3, 3), 0)
     frameThresh = cv2.threshold(frameBlured, threshValue, 255,
-                                cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-    frameThresh = ~frameThresh
+                                cv2.THRESH_OTSU)[1]
+    #frameThresh = ~frameThresh
     contours, hierarchy = cv2.findContours(frameThresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cont in contours:
         cv2.drawContours(frame, cont, -1, (255, 0, 255), 2)
+        (x,y,w,h) = cv2.boundingRect(cont)
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (10,0,10), 2)
     # -----------------------------
     
     end = time.time()
     fps = 1 /(end-begin)
     cv2.putText(frame, f"fps:{int(fps)}", (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (20,20,20), 2)
     
-    cv2.imshow("feed", frame)
     cv2.imshow("frameThresh", frameThresh)
+    cv2.imshow("feed", frame)
     
     if cv2.waitKey(5) & 0xFF == ord('q'):
         break
