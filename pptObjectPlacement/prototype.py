@@ -18,21 +18,23 @@ images = []
 frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 frameBlured = cv2.GaussianBlur(frameGray, (11, 11), 0)
-images.append(frameBlured)
+images.append({"image":frameBlured, "title":'frameBlured'})
 #cv2.imshow("frameBL", frameBlured)
 
 frameDenoised = cv2.fastNlMeansDenoising(frameGray, 10, 10, 7, 21)
-images.append(frameDenoised)
+images.append({"image":frameDenoised, "title":'frameDenoised'})
+
 #cv2.imshow("frameDN", frameDenoised)
 
 #---------- END OF FRAME COMPUTING PART
-fig = plt.figure(figsize=(14, 5))
-
+fig = plt.figure(figsize=(14, 6))
+axes= []
 for i, img in zip([ x for x in range(0, len(images))], images):
-    fig.add_subplot(1, 4, i+1)
-    plt.imshow(img)
-    plt.axis('off')
-    plt.title("img")
+    tmp = fig.add_subplot(1, 4, i+1)
+    tmp.set_title(img["title"])
+    plt.plot(14,6)
+    plt.imshow(img["image"])
+fig.tight_layout()
 plt.show()
 #fig.add_subplot(1, 4, 1)
 #plt.imshow(frameBlured)
