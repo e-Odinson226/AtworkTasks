@@ -17,6 +17,10 @@ def compute_frame(frame):
                                     cv2.THRESH_BINARY, 21, 2)
     return [median_th, median_adaptive_th]
 
+def get_contours(img_list):
+    for image in img_list:
+        cv2.findContours()
+
 #---------- BEGINING TO DO COMPUTING ON FRAMES
 address_list = ['./img samples/01.jpg',
                 './img samples/02.jpg',
