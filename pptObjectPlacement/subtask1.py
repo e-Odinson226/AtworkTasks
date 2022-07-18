@@ -1,4 +1,4 @@
-from matplotlib import image, pyplot as plt
+from matplotlib import pyplot as plt
 import cv2
 
 #---------- BEGINING TO READ
@@ -38,6 +38,8 @@ address_list = ['./img samples/01.jpg',
                 './img samples/05.jpg',
                 ]
 frames = []
+
+
 for address in address_list:
     #img = []
     frame = cv2.imread(address, 0)
