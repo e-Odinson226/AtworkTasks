@@ -1,5 +1,4 @@
 from matplotlib import image, pyplot as plt
-import time
 import cv2
 
 #---------- BEGINING TO READ
@@ -8,19 +7,17 @@ def preprocess_frame(frame):
     return cv2.resize(frame, (720, 480), interpolation= cv2.INTER_AREA)
 
 def median_adaptive_th(frame):
-    median_blur = cv2.medianBlur(frame, 11)
-    median_denoised = cv2.fastNlMeansDenoising(median_blur, 10, 10, 7, 21)    
-
-    median_th =  cv2.threshold(median_denoised, 100, 255,
-                                    cv2.THRESH_OTSU)[1]
-    median_adaptive_th = cv2.adaptiveThreshold(median_th, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                    cv2.THRESH_BINARY_INV, 7, 5)
+    #median_denoised = cv2.fastNlMeansDenoising(frame, 7, 21)    
+    median_blur = cv2.medianBlur(frame, 7)
+    #gaus_blur = cv2.GaussianBlur(frame, (9, 9), 0)
+    median_adaptive_th = cv2.adaptiveThreshold(median_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                    cv2.THRESH_BINARY, 11, 5)
     return median_adaptive_th
 
 def median_th(frame):
     median_blur = cv2.medianBlur(frame, 11)
     median_th =  cv2.threshold(median_blur, 100, 255,
-                                    cv2.THRESH_OTSU)[1]
+                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
     return median_th
 
 def get_contours(frame, drawOnFrame):
