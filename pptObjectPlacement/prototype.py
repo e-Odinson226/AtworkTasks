@@ -7,15 +7,21 @@ def preprocess_frame(frame):
     #frame = cv2.imread(addr, 0)
     return cv2.resize(frame, (720, 480), interpolation= cv2.INTER_AREA)
 
-def compute_frame(frame):
+def median_adaptive_th(frame):
     median_blur = cv2.medianBlur(frame, 11)
     median_denoised = cv2.fastNlMeansDenoising(median_blur, 10, 10, 7, 21)    
 
+    median_th =  cv2.threshold(median_denoised, 100, 255,
+                                    cv2.THRESH_OTSU)[1]
+    median_adaptive_th = cv2.adaptiveThreshold(median_th, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                    cv2.THRESH_BINARY_INV, 7, 5)
+    return median_adaptive_th
+
+def median_th(frame):
+    median_blur = cv2.medianBlur(frame, 11)
     median_th =  cv2.threshold(median_blur, 100, 255,
                                     cv2.THRESH_OTSU)[1]
-    median_adaptive_th = cv2.adaptiveThreshold(median_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                    cv2.THRESH_BINARY, 5, 2)
-    return [median_th, median_adaptive_th]
+    return median_th
 
 def get_contours(frame, drawOnFrame):
     contours, _ = cv2.findContours(frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -39,12 +45,13 @@ for address in address_list:
     #img = []
     frame = cv2.imread(address, 0)
     frame = preprocess_frame(frame)
-    computed_list = compute_frame(frame)
-    contoured_medianTh = get_contours(computed_list[0], frame.copy())
-    contoured_adaptiveTh = get_contours(computed_list[1], frame.copy())
+    frame_median_adaptive_th = median_adaptive_th(frame)
+    frame_median_th = median_th(frame)
+    contoured_adaptiveTh = get_contours(frame_median_adaptive_th, frame.copy())
+    contoured_medianTh = get_contours(frame_median_th, frame.copy())
     frames.append( {'title':'Frame',    'image': frame} )
-    frames.append( {'title':'Median Threshold', 'image': computed_list[0]} )
-    frames.append( {'title':'Median Adaptive Threshold', 'image': computed_list[1]} )
+    frames.append( {'title':'Median Threshold', 'image': frame_median_th} )
+    frames.append( {'title':'Median Adaptive Threshold', 'image': frame_median_adaptive_th} )
     frames.append( {'title':'Median Threshold', 'image': contoured_medianTh} )
     frames.append( {'title':'Median Adaptive Threshold', 'image': contoured_adaptiveTh} )
     #frames.append(img)
