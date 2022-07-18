@@ -13,19 +13,18 @@ def compute_frame(frame):
 
     median_th =  cv2.threshold(median_blur, 100, 255,
                                     cv2.THRESH_OTSU)[1]
-    median_adaptive_th = cv2.adaptiveThreshold(median_denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                    cv2.THRESH_BINARY, 21, 2)
+    median_adaptive_th = cv2.adaptiveThreshold(median_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                    cv2.THRESH_BINARY, 5, 2)
     return [median_th, median_adaptive_th]
 
-def get_contours(frame):
-    frame_copy = frame.copy()
+def get_contours(frame, drawOnFrame):
     contours, _ = cv2.findContours(frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cont in contours:
-        cv2.drawContours(frame_copy, cont, -1, (255, 0, 255), 2)
+        cv2.drawContours(drawOnFrame, cont, -1, (255, 0, 255), 2)
         (x,y,w,h) = cv2.boundingRect(cont)
-        cv2.rectangle(frame_copy, (x, y), (x+w, y+h), (10,0,10), 2)
+        cv2.rectangle(drawOnFrame, (x, y), (x+w, y+h), (10,0,10), 2)
             
-    return frame_copy
+    return drawOnFrame
             
 
 #---------- BEGINING TO DO COMPUTING ON FRAMES
@@ -41,17 +40,19 @@ for address in address_list:
     frame = cv2.imread(address, 0)
     frame = preprocess_frame(frame)
     computed_list = compute_frame(frame)
-    contoured_imagelist = get_contours(computed_list[0])
+    contoured_medianTh = get_contours(computed_list[0], frame.copy())
+    contoured_adaptiveTh = get_contours(computed_list[1], frame.copy())
     frames.append( {'title':'Frame',    'image': frame} )
     frames.append( {'title':'Median Threshold', 'image': computed_list[0]} )
     frames.append( {'title':'Median Adaptive Threshold', 'image': computed_list[1]} )
-    frames.append( {'title':'contoured', 'image': contoured_imagelist} )
+    frames.append( {'title':'Median Threshold', 'image': contoured_medianTh} )
+    frames.append( {'title':'Median Adaptive Threshold', 'image': contoured_adaptiveTh} )
     #frames.append(img)
 
 #---------- END OF FRAME COMPUTING PART
-plt.figure(figsize=(20, 7))
+plt.figure(figsize=(25, 7))
 for i in range(len(frames)):
-    plt.subplot(5,4,i+1),plt.imshow(frames[i]['image'],'gray')
+    plt.subplot(5,5,i+1),plt.imshow(frames[i]['image'],'gray')
     plt.title(frames[i]['title'])
     plt.xticks([]),plt.yticks([])
 plt.show()
