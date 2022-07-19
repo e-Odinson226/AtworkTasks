@@ -29,15 +29,22 @@ def get_contours(frame):
     return contours
 
 def draw_rectangle(frame, contours):
+    error_persent = 1.30
     for cont in contours:
         #cv2.drawContours(frame, cont, -1, (255, 0, 255), 2)
         (x,y,w,h) = cv2.boundingRect(cont)
+        w = int(w * error_persent)
+        h = int(h * error_persent)
         cv2.rectangle(frame, (x, y), (x+w, y+h), (10,0,10), 2)
     return frame
 
 def create_mask(mask, contours):
+    error_persent = 1.80
     for cont in contours:
         (x,y,w,h) = cv2.boundingRect(cont)
+        # Create a +0.15 as predicted error
+        w = int(w * error_persent)
+        h = int(h * error_persent)
         cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
     return mask
 
@@ -73,11 +80,10 @@ while True:
 
     # -- -- -- draw contours on the original frame
     original_frame = draw_rectangle(original_frame, cntrs)
-    image = cv2.Canny(frame, 135, 200)
-    cv2.imshow("Canny", image)
+    
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
-    #mask = np.ones(original_frame.shape[:2], dtype="uint8") * 255
-    mask = np.ones((640, 720), dtype="uint8") * 255
+    mask = np.ones(frame.shape[:2], dtype="uint8") * 255
+    #mask = np.ones((640, 720), dtype="uint8") * 255
     mask = create_mask(mask, cntrs)
 
     cv2.imshow("mask", mask)
