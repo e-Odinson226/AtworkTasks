@@ -15,17 +15,17 @@ def median_adaptive_th(frame):
     blur = cv2.medianBlur(frame, 13)
     #blur = cv2.GaussianBlur(frame, (7, 7), 13)
     median_adaptive_th = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                    cv2.THRESH_BINARY, 17, 7)
+                                    cv2.THRESH_BINARY_INV, 17, 7)
     return median_adaptive_th
 
 def median_th(frame):
     blur = cv2.medianBlur(frame, 11)
     median_th =  cv2.threshold(blur, 100, 255,
-                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+                                    cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
     return median_th
 
 def get_contours(frame):
-    contours, _ = cv2.findContours(frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
 def draw_rectangle(frame, contours):
@@ -58,7 +58,7 @@ address_list = ['./img samples/01.jpg',
 
 while True:
 #---------- BEGINING TO READ
-    frame = cv2.imread(address_list[0])
+    frame = cv2.imread(address_list[2])
     frame = cv2.resize(frame, (720, 640), interpolation= cv2.INTER_AREA)
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
@@ -72,7 +72,7 @@ while True:
     # -- -- -- blur the frame and get a threshold
     threshold = median_th(frame)
     #threshold = median_adaptive_th(frame)
-    #cv2.imshow("Threshold", threshold)
+    cv2.imshow("Threshold", threshold)
 
     # -- -- -- extract contours from the thresholded frame
     #cntrs = get_contours(median_threshold)
