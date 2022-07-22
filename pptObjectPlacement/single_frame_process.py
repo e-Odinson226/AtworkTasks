@@ -77,17 +77,20 @@ while True:
     # -- -- -- extract contours from the thresholded frame
     #cntrs = get_contours(median_threshold)
     cntrs = get_contours(threshold)
-
+    
+    tmpFrame = original_frame.copy()
     # -- -- -- draw contours on the original frame
     original_frame = draw_rectangle(original_frame, cntrs)
     
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
-    #mask = np.ones((640, 720), dtype="uint8") * 255
+    
     mask = create_mask(mask, cntrs)
+    masked_frame = cv2.bitwise_and(tmpFrame, tmpFrame, mask=mask)
 
     cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
+    cv2.imshow("masked_frame", masked_frame)
 
     if cv2.waitKey(0) & 0xFF == ord('q'):
         break
