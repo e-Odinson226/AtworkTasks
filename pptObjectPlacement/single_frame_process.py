@@ -39,10 +39,10 @@ def draw_rectangle(frame, contours):
     return frame
 
 def create_mask(mask, contours):
-    error_persent = 1.80
+    # Create a +1.3 coefficient as predicted error
+    error_persent = 1.30
     for cont in contours:
         (x,y,w,h) = cv2.boundingRect(cont)
-        # Create a +0.15 as predicted error
         w = int(w * error_persent)
         h = int(h * error_persent)
         cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
