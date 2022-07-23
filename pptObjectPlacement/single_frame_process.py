@@ -47,6 +47,21 @@ def create_mask(mask, contours):
         cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
     return mask
 
+def convert_cm2pixle(dimention, lens):
+    width = dimention['width']
+    height = dimention['height']
+    p_height =  height  * lens['focal_length'] / (lens['pixel_pitch'] * lens['lens_distance'])
+    p_width =   width   * lens['focal_length'] / (lens['pixel_pitch'] * lens['lens_distance'])
+    #pixels = real_distance * lens['focal_length'] / (lens['pixel_pitch'] * lens['lens_distance'])
+    return {'width':p_width, 'height': p_height}
+
+def create_template(dimention):
+    return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
+
+
+#def scale_ratio(frame, lens):
+#    real_distance = lens['pixel_pitch'] * pixels * lens['lens_distance'] / lens['focal_length']
+    
 # Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
                 './img samples/02.jpg',
@@ -54,6 +69,19 @@ address_list = ['./img samples/01.jpg',
                 './img samples/04.jpg',
                 './img samples/05.jpg',
                 ]
+#lens = {
+#    'focal_length'  : 4.7 mili,
+#    'pixel_pitch'   : 2.2 micro,
+#    'lens_distance' : 0,
+#}
+
+obj_dim = [
+    { 'width':10    ,'height':5 },
+    { 'width':5    ,'height':10 },
+    { 'width':8    ,'height':8 }
+]
+# temporary set pixle dimentions as static
+p_dim = {'width':80, 'height': 400}
 
 while True:
 #---------- BEGINING TO READ
@@ -79,11 +107,26 @@ while True:
     original_frame = draw_rectangle(original_frame, cntrs)
     
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
+    print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
-    
     mask = create_mask(mask, cntrs)
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
-
+    
+    # -- -- -- convert given size in cm to pixles
+    #p_dim = convert_cm2pixle(obj_dim[0], lens)
+    #draw_rectangle(original_frame, [p_dim])
+    
+    # -- -- -- convert given size in cm to pixles
+    template = create_template(p_dim)
+    print(template.shape[::-1])
+    w, h = template.shape[::-1]
+    cv2.imshow("template", template)
+    res = cv2.matchTemplate(masked_frame, template, cv2.TM_CCOEFF_NORMED)
+    templateMatching_threshold = 0.8
+    loc = np.where( res >= templateMatching_threshold)
+    for pt in zip(*loc[::-1]):
+        cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+    
     cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
     cv2.imshow("masked_frame", masked_frame)
