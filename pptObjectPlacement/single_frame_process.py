@@ -1,4 +1,3 @@
-from cv2 import waitKey
 from matplotlib import pyplot as plt
 import time
 import cv2
@@ -35,11 +34,11 @@ def draw_rectangle(frame, contours):
         (x,y,w,h) = cv2.boundingRect(cont)
         w = int(w * error_persent)
         h = int(h * error_persent)
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (10,0,10), 2)
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (255,0,255), 2)
     return frame
 
 def create_mask(mask, contours):
-    # Create a +1.3 coefficient as predicted error
+    # Set a +1.3 coefficient as predicted error
     error_persent = 1.30
     for cont in contours:
         (x,y,w,h) = cv2.boundingRect(cont)
@@ -48,7 +47,7 @@ def create_mask(mask, contours):
         cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
     return mask
 
-
+# Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
                 './img samples/02.jpg',
                 './img samples/03.jpg',
@@ -72,13 +71,10 @@ while True:
     # -- -- -- blur the frame and get a threshold
     threshold = median_th(frame)
     #threshold = median_adaptive_th(frame)
-    cv2.imshow("Threshold", threshold)
 
     # -- -- -- extract contours from the thresholded frame
-    #cntrs = get_contours(median_threshold)
     cntrs = get_contours(threshold)
     
-    tmpFrame = original_frame.copy()
     # -- -- -- draw contours on the original frame
     original_frame = draw_rectangle(original_frame, cntrs)
     
@@ -86,7 +82,7 @@ while True:
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
     
     mask = create_mask(mask, cntrs)
-    masked_frame = cv2.bitwise_and(tmpFrame, tmpFrame, mask=mask)
+    masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
 
     cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)

@@ -8,7 +8,7 @@ At this time robot doesn't calculate coordinates to put down objects, on platfor
 so the goal is:
 
 1.  Have a FOV of the platform (which objects are going to put on),
-    the robot should place objects according to their dimensions and field's empty areas.
+    the robot should place objects according to their dimensions and platforms's empty areas.
     
     STATE: developing
         
