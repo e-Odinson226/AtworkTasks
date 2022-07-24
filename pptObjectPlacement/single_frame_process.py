@@ -58,6 +58,8 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
+def arrange(fov_frame, object_frame):
+    for i in fov_frame.
 
 #def scale_ratio(frame, lens):
 #    real_distance = lens['pixel_pitch'] * pixels * lens['lens_distance'] / lens['focal_length']
@@ -116,17 +118,24 @@ while True:
     #p_dim = convert_cm2pixle(obj_dim[0], lens)
     #draw_rectangle(original_frame, [p_dim])
     
-    # -- -- -- convert given size in cm to pixles
-    template = create_template(p_dim)
-    print(template.shape[::-1])
-    w, h = template.shape[::-1]
-    cv2.imshow("template", template)
-    res = cv2.matchTemplate(masked_frame, template, cv2.TM_CCOEFF_NORMED)
-    templateMatching_threshold = 0.8
-    loc = np.where( res >= templateMatching_threshold)
-    for pt in zip(*loc[::-1]):
-        cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+    # -- -- -- template matching
+    #template = create_template(p_dim)
+    #w, h = template.shape[::-1]
+    #res = cv2.matchTemplate(mask, template, cv2.TM_CCOEFF)
+    #templateMatching_threshold = 0.8
+    #loc = np.where( res >= templateMatching_threshold)
+    #for pt in zip(*loc[::-1]):
+    #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
+    # -- -- -- arrange ampty area manually
+    template = create_template(p_dim)
+    w, h = template.shape[::-1]
+    arrange(masked_frame, template)
+    
+    
+    print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
+    print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
+    print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
     cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
     cv2.imshow("masked_frame", masked_frame)
