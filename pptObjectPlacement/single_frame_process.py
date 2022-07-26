@@ -38,14 +38,20 @@ def draw_rectangle(frame, contours):
     return frame
 
 def create_mask(mask, contours):
+    min_contour = cv2.contourArea(contours[0])
+    
     # Set a +1.3 coefficient as predicted error
     error_persent = 1.30
+    
     for cont in contours:
         (x,y,w,h) = cv2.boundingRect(cont)
         w = int(w * error_persent)
         h = int(h * error_persent)
         cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
-    return mask
+        contour_area = cv2.contourArea(cont)
+        if contour_area < min_contour:
+            min_contour = contour_area
+    return [mask, min_contour]
 
 def convert_cm2pixle(dimention, lens):
     width = dimention['width']
@@ -58,24 +64,24 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
-def arrange(fov_frame, obj_frame, origin):
-    fovFrame_w, fovFrame_h = fov_frame.shape[::-1]
-    objFrame_w, objFrame_h = obj_frame.shape[::-1]
-    # check sides of object frame for admissible points on fov frame
-    ## des diameter:
-    ## asc diameter:
-    ## top:
-    ## right:
-    ## left:
-    ## bottom:
-
-    # if there was no interfere then check all pixels:
-    for y in range(origin[0], 10):
-        for x in range(origin[1], 10):
-            #print(f"{x}*{y}: {fov_frame[y, x]}")
-            if fov_frame[y, x] == 255:
-            #    print(True)
-            #else:   i+=1
+#def arrange(fov_frame, obj_frame, origin):
+#    fovFrame_w, fovFrame_h = fov_frame.shape[::-1]
+#    objFrame_w, objFrame_h = obj_frame.shape[::-1]
+#    # check sides of object frame for admissible points on fov frame
+#    ## des diameter:
+#    ## asc diameter:
+#    ## top:
+#    ## right:
+#    ## left:
+#    ## bottom:
+#
+#    # if there was no interfere then check all pixels:
+#    for y in range(origin[0], 10):
+#        for x in range(origin[1], 10):
+#            #print(f"{x}*{y}: {fov_frame[y, x]}")
+#            if fov_frame[y, x] == 255:
+#            #    print(True)
+#            #else:   i+=1
 
 #def scale_ratio(frame, lens):
 #    real_distance = lens['pixel_pitch'] * pixels * lens['lens_distance'] / lens['focal_length']
@@ -125,9 +131,9 @@ while True:
     original_frame = draw_rectangle(original_frame, cntrs)
     
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
-    print(frame.shape[:2])
+    #print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
-    mask = create_mask(mask, cntrs)
+    mask, min_contour = create_mask(mask, cntrs)
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
     # -- -- -- convert given size in cm to pixles
@@ -146,8 +152,8 @@ while True:
     # -- -- -- arrange ampty area manually
     template = create_template(p_dim)
     w, h = template.shape[::-1]
-    print(masked_frame[10,6])
-    arrange(masked_frame, template, [0, 0])
+    print(min_contour)
+    #arrange(masked_frame, template, [0, 0])
     
     
     print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
