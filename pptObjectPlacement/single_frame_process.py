@@ -58,8 +58,24 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
-def arrange(fov_frame, object_frame):
-    for i in fov_frame.
+def arrange(fov_frame, obj_frame, origin):
+    fovFrame_w, fovFrame_h = fov_frame.shape[::-1]
+    objFrame_w, objFrame_h = obj_frame.shape[::-1]
+    # check sides of object frame for admissible points on fov frame
+    ## des diameter:
+    ## asc diameter:
+    ## top:
+    ## right:
+    ## left:
+    ## bottom:
+
+    # if there was no interfere then check all pixels:
+    for y in range(origin[0], 10):
+        for x in range(origin[1], 10):
+            #print(f"{x}*{y}: {fov_frame[y, x]}")
+            if fov_frame[y, x] == 255:
+            #    print(True)
+            #else:   i+=1
 
 #def scale_ratio(frame, lens):
 #    real_distance = lens['pixel_pitch'] * pixels * lens['lens_distance'] / lens['focal_length']
@@ -130,7 +146,8 @@ while True:
     # -- -- -- arrange ampty area manually
     template = create_template(p_dim)
     w, h = template.shape[::-1]
-    arrange(masked_frame, template)
+    print(masked_frame[10,6])
+    arrange(masked_frame, template, [0, 0])
     
     
     print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
