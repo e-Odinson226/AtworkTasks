@@ -1,15 +1,19 @@
-import cv2
-import matplotlib.pyplot as plt
+l1 = [[0, 2, 5, 0, 0, 0],
+      [3, 4, 6, 0, 0, 0],
+      [0, 1, 1, 1, 1, 0],
+      [0, 0, 1, 1, 1, 0],
+      [0, 0, 1, 1, 1, 0],
+      [0, 0, 0, 0, 0, 0]]
 
-frame = cv2.imread('./img samples/01.jpg', 0)
-median_blur = cv2.medianBlur(frame, 11)
-median_th =  cv2.threshold(median_blur, 100, 255,
-                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-_, cntrs = cv2.findContours(median_th)
-while True:
-    _, frame = cap.read()
-    plt.figure(figsize=(2, 7))
-    plt.subplot(1,2,1),plt.imshow(frame, 'gray')
-    plt.title('title')
-    plt.xticks([]),plt.yticks([])
-    plt.show()
+for w in range(0, 6):
+    for h in range(0, 4):
+        print(f"----\ncheck[{h},{w}]:{l1[h][w]}")
+        #if not l1[h][w] == 1:
+        #    w+=1
+        #    break
+        #else:
+        #    break
+        #    w+=1
+        #print(f"changed to: [{h},{w}]:{l1[h][w]}\n----")
+    #w+=1
+print(f"w:{w}, h:{h}")
