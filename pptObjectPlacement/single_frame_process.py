@@ -38,26 +38,31 @@ def draw_rectangle(frame, contours):
     return frame
 
 def create_mask(mask, contours):
-    min_contour = contours[0]
-    min_contour_area = cv2.contourArea(min_contour)
+    (_, _, w, h) = cv2.boundingRect(contours[0])
+    min_contour = [w, h]
+    min_contour_area = cv2.contourArea(contours[0])
     # Set a +1.3 coefficient as predicted error
     error_persent = 1.30
     
     for cont in contours:
         contour_area = cv2.contourArea(cont)
         #print(f"contour_area:{contour_area} threshold:{(mask.shape[0]*mask.shape[1])*0.002}")
-        #if contour_area > (mask.shape[0]*mask.shape[1])*0.002:
-        rect =  cv2.minAreaRect(cont)
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
-        cv2.drawContours(mask, [box], 0, -1, -1)
         
-        #(x,y,w,h) = cv2.boundingRect(cont)
-        #w = int(w * error_persent)
-        #h = int(h * error_persent)
-        #cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
+        #   Filtering based on size
+        #if contour_area > (mask.shape[0]*mask.shape[1])*0.002:
+        
+        #   GET MINIMUM AREA RECANGLE
+        #rect =  cv2.minAreaRect(cont)
+        #box = cv2.boxPoints(rect)
+        #box = np.int0(box)
+        #cv2.drawContours(mask, [box], 0, -1, -1)
+        
+        (x,y,w,h) = cv2.boundingRect(cont)
+        w = int(w * error_persent)
+        h = int(h * error_persent)
+        cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
         if contour_area < min_contour_area:
-            min_contour = cont
+            min_contour = [w, h]
             # TESTING PORPUSES
             #minCont = cont
     # TESTING PORPUSES
@@ -124,7 +129,7 @@ p_dim = {'width':80, 'height': 400}
 
 while True:
 #---------- BEGINING TO READ
-    frame = cv2.imread(address_list[0])
+    frame = cv2.imread(address_list[1])
     frame = cv2.resize(frame, (720, 640), interpolation= cv2.INTER_AREA)
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
@@ -165,7 +170,7 @@ while True:
     #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
     # -- -- -- arrange empty area manually
-    print(min_contour.shape)
+    print(min_contour)
     #arrange(masked_frame, template, [0, 0])
     
     print("----------------------------------------------------------")
