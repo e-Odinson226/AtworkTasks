@@ -38,22 +38,28 @@ def draw_rectangle(frame, contours):
     return frame
 
 def create_mask(mask, contours):
-    min_contour_area = cv2.contourArea(contours[0])
+    min_contour = contours[0]
+    min_contour_area = cv2.contourArea(min_contour)
     # Set a +1.3 coefficient as predicted error
     error_persent = 1.30
     
     for cont in contours:
         contour_area = cv2.contourArea(cont)
         #print(f"contour_area:{contour_area} threshold:{(mask.shape[0]*mask.shape[1])*0.002}")
-        if contour_area > (mask.shape[0]*mask.shape[1])*0.002:
-            (x,y,w,h) = cv2.boundingRect(cont)
-            w = int(w * error_persent)
-            h = int(h * error_persent)
-            cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
-            if contour_area < min_contour_area:
-                min_contour = cont
-                # TESTING PORPUSES
-                #minCont = cont
+        #if contour_area > (mask.shape[0]*mask.shape[1])*0.002:
+        rect =  cv2.minAreaRect(cont)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        cv2.drawContours(mask, [box], 0, -1, -1)
+        
+        #(x,y,w,h) = cv2.boundingRect(cont)
+        #w = int(w * error_persent)
+        #h = int(h * error_persent)
+        #cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
+        if contour_area < min_contour_area:
+            min_contour = cont
+            # TESTING PORPUSES
+            #minCont = cont
     # TESTING PORPUSES
     #(x,y,w,h) = cv2.boundingRect(minCont)
     #w = int(w * error_persent)
@@ -118,7 +124,7 @@ p_dim = {'width':80, 'height': 400}
 
 while True:
 #---------- BEGINING TO READ
-    frame = cv2.imread(address_list[2])
+    frame = cv2.imread(address_list[0])
     frame = cv2.resize(frame, (720, 640), interpolation= cv2.INTER_AREA)
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
@@ -135,14 +141,13 @@ while True:
 
     # -- -- -- extract contours from the thresholded frame
     cntrs = get_contours(threshold)
-    
+    print(cntrs)
     # -- -- -- draw contours on the original frame
     original_frame = draw_rectangle(original_frame, cntrs)
     
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
     #print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
-    create_mask(mask, cntrs)
     mask, min_contour = create_mask(mask, cntrs)
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
