@@ -84,6 +84,13 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
+def grid(frame, grid_width, grid_height):
+    h, w = frame.shape[:2]
+    frame_w = int(w / grid_width)
+    frame_h = int(h / grid_height)
+    return np.ones((frame_h, frame_w), dtype="uint8") * 255
+    
+
 #def arrange(fov_frame, obj_frame, origin):
 #    fovFrame_w, fovFrame_h = fov_frame.shape[::-1]
 #    objFrame_w, objFrame_h = obj_frame.shape[::-1]
@@ -130,7 +137,7 @@ p_dim = {'width':80, 'height': 400}
 while True:
 #---------- BEGINING TO READ
     frame = cv2.imread(address_list[1])
-    frame = cv2.resize(frame, (720, 640), interpolation= cv2.INTER_AREA)
+    frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
 
@@ -146,7 +153,7 @@ while True:
 
     # -- -- -- extract contours from the thresholded frame
     cntrs = get_contours(threshold)
-    print(cntrs)
+    
     # -- -- -- draw contours on the original frame
     original_frame = draw_rectangle(original_frame, cntrs)
     
@@ -154,6 +161,8 @@ while True:
     #print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
     mask, min_contour = create_mask(mask, cntrs)
+    grid_w = min_contour[0]
+    grid_h = min_contour[1]
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
     # -- -- -- convert given size in cm to pixles
@@ -169,9 +178,8 @@ while True:
     #for pt in zip(*loc[::-1]):
     #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
-    # -- -- -- arrange empty area manually
-    print(min_contour)
-    #arrange(masked_frame, template, [0, 0])
+    # -- -- -- create grid frame
+    grid_frame = grid(frame, grid_w, grid_h)
     
     print("----------------------------------------------------------")
     print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
@@ -180,6 +188,7 @@ while True:
     cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
     cv2.imshow("masked_frame", masked_frame)
+    cv2.imshow("grid_frame", grid_frame)
 
     if cv2.waitKey(0) & 0xFF == ord('q'):
         break
