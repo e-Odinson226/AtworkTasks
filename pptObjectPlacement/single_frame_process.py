@@ -84,11 +84,43 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
-def grid(frame, grid_width, grid_height):
-    h, w = frame.shape[:2]
-    frame_w = int(w / grid_width)
-    frame_h = int(h / grid_height)
-    return np.ones((frame_h, frame_w), dtype="uint8") * 255
+def grid(frame, min_obs_width, min_obs_height):
+    frame_h, frame_w = frame.shape[:2]
+    grid_w = int(frame_w / min_obs_width)
+    grid_h = int(frame_h / min_obs_height)
+    grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
+    
+    
+    print(frame.shape[:2])
+    print(min_obs_height, min_obs_width)
+    print(grid_h, grid_w)
+    
+    cv2.imshow("slice", frame[200:200+grid_h, 100:100+grid_w])
+    if (frame[200:200+grid_h, 100:100+grid_w].any())==0:
+        print("Black")
+    for h_grid in range(0, frame_h, min_obs_height):
+        print("")
+        for w_grid in range(0, frame_w, min_obs_width):
+            
+            #has_obs = False
+            
+            print("*",end=' ')
+            #print(" ",end=' ')
+            #print("",end=' ')
+            #for w_pixle in range(0, min_obs_width):
+            #    print("",end=' ')
+            #    for h_pixle in range(0,min_obs_height):
+            #        print(f"{frame[w_pixle, h_pixle]}")
+#                    
+#                    print(f"W:{w_grid-1} H:{h_grid-1}  = {frame[w_pixle, h_pixle]}")
+#                    if frame[w_pixle, h_pixle] == 0:
+#                        grid[w_grid-1, h_grid-1] = 0
+#                        has_obs = True
+#                        break
+#                if has_obs:
+#                    break
+                
+    return grid
     
 
 #def arrange(fov_frame, obj_frame, origin):
@@ -178,8 +210,10 @@ while True:
     #for pt in zip(*loc[::-1]):
     #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
-    # -- -- -- create grid frame
-    grid_frame = grid(frame, grid_w, grid_h)
+    # -- -- -- CREATE GRID FRAME AND ASSIGN VALUES FOR EACH GRID CELL
+    grid_frame = grid(mask, grid_w, grid_h)    
+       
+    
     
     print("----------------------------------------------------------")
     print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
