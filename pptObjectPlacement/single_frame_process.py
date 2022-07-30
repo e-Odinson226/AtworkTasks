@@ -24,7 +24,7 @@ def median_th(frame):
     return median_th
 
 def get_contours(frame):
-    contours, _ = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     return contours
 
 def draw_rectangle(frame, contours):
@@ -38,19 +38,28 @@ def draw_rectangle(frame, contours):
     return frame
 
 def create_mask(mask, contours):
-    min_contour = cv2.contourArea(contours[0])
-    
+    min_contour_area = cv2.contourArea(contours[0])
     # Set a +1.3 coefficient as predicted error
     error_persent = 1.30
     
     for cont in contours:
-        (x,y,w,h) = cv2.boundingRect(cont)
-        w = int(w * error_persent)
-        h = int(h * error_persent)
-        cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
         contour_area = cv2.contourArea(cont)
-        if contour_area < min_contour:
-            min_contour = contour_area
+        #print(f"contour_area:{contour_area} threshold:{(mask.shape[0]*mask.shape[1])*0.002}")
+        if contour_area > (mask.shape[0]*mask.shape[1])*0.002:
+            (x,y,w,h) = cv2.boundingRect(cont)
+            w = int(w * error_persent)
+            h = int(h * error_persent)
+            cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
+            if contour_area < min_contour_area:
+                min_contour = cont
+                # TESTING PORPUSES
+                #minCont = cont
+    # TESTING PORPUSES
+    #(x,y,w,h) = cv2.boundingRect(minCont)
+    #w = int(w * error_persent)
+    #h = int(h * error_persent)
+    #cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
+
     return [mask, min_contour]
 
 def convert_cm2pixle(dimention, lens):
@@ -133,6 +142,7 @@ while True:
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
     #print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
+    create_mask(mask, cntrs)
     mask, min_contour = create_mask(mask, cntrs)
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
@@ -149,13 +159,11 @@ while True:
     #for pt in zip(*loc[::-1]):
     #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
-    # -- -- -- arrange ampty area manually
-    template = create_template(p_dim)
-    w, h = template.shape[::-1]
-    print(min_contour)
+    # -- -- -- arrange empty area manually
+    print(min_contour.shape)
     #arrange(masked_frame, template, [0, 0])
     
-    
+    print("----------------------------------------------------------")
     print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
     print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
     print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
