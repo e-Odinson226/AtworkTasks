@@ -95,32 +95,14 @@ def grid(frame, min_obs_width, min_obs_height):
     print(min_obs_height, min_obs_width)
     print(grid_h, grid_w)
     
-    cv2.imshow("slice", frame[200:200+grid_h, 100:100+grid_w])
-    
     for h in range(0, frame_h, min_obs_height):
-        print("")
         for w in range(0, frame_w, min_obs_width):
-            
-            #has_obs = False
             if (frame[h:h+grid_h, w:w+grid_w].any())==0:
+                grid[int((h+min_obs_height)/min_obs_height)-2, int((w+min_obs_width)/min_obs_width)-2] = 0
                 print("B",end=' ')
             else:
+                grid[int((h+min_obs_height)/min_obs_height)-2, int((w+min_obs_width)/min_obs_width)-2] = 255
                 print("W",end=' ')
-                
-            #print(" ",end=' ')
-            #print("",end=' ')
-            #for w_pixle in range(0, min_obs_width):
-            #    print("",end=' ')
-            #    for h_pixle in range(0,min_obs_height):
-            #        print(f"{frame[w_pixle, h_pixle]}")
-#                    
-#                    print(f"W:{w_grid-1} H:{h_grid-1}  = {frame[w_pixle, h_pixle]}")
-#                    if frame[w_pixle, h_pixle] == 0:
-#                        grid[w_grid-1, h_grid-1] = 0
-#                        has_obs = True
-#                        break
-#                if has_obs:
-#                    break
                 
     return grid
     
