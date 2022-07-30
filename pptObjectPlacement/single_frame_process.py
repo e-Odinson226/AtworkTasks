@@ -96,15 +96,17 @@ def grid(frame, min_obs_width, min_obs_height):
     print(grid_h, grid_w)
     
     cv2.imshow("slice", frame[200:200+grid_h, 100:100+grid_w])
-    if (frame[200:200+grid_h, 100:100+grid_w].any())==0:
-        print("Black")
-    for h_grid in range(0, frame_h, min_obs_height):
+    
+    for h in range(0, frame_h, min_obs_height):
         print("")
-        for w_grid in range(0, frame_w, min_obs_width):
+        for w in range(0, frame_w, min_obs_width):
             
             #has_obs = False
-            
-            print("*",end=' ')
+            if (frame[h:h+grid_h, w:w+grid_w].any())==0:
+                print("B",end=' ')
+            else:
+                print("W",end=' ')
+                
             #print(" ",end=' ')
             #print("",end=' ')
             #for w_pixle in range(0, min_obs_width):
