@@ -29,12 +29,24 @@ def get_contours(frame):
 
 def draw_rectangle(frame, contours):
     error_persent = 1.30
+    (x, y, w, h) = cv2.boundingRect(contours[0])
+    w = int(w * error_persent)
+    h = int(h * error_persent)
+    #print(f"area:{cv2.contourArea(contours[0])}, x:{x} y:{y}, h:{h} w:{w}")
+    #cv2.rectangle(frame, (x, y), (x+w, y+h), (0,100,100), 2)
+    
+    min_contour_area = cv2.contourArea(contours[0])
     for cont in contours:
-        #cv2.drawContours(frame, cont, -1, (255, 0, 255), 2)
+        contour_area = cv2.contourArea(cont)
         (x,y,w,h) = cv2.boundingRect(cont)
         w = int(w * error_persent)
         h = int(h * error_persent)
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (255,0,255), 2)
+        if contour_area > min_contour_area:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,0), 2)
+        else:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (255,255,255), 2)
+            #print(f"x:{x} y:{y}, h:{h} w:{w}")
+            
     return frame
 
 def create_mask(mask, contours):
@@ -89,18 +101,22 @@ def grid(frame, cell_width, cell_height):
     grid_w = int(frame_w / cell_width)
     grid_h = int(frame_h / cell_height)
     grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
+    cell = np.ones((cell_width, cell_height), dtype="uint8") * 255
     
-    print(frame.shape[:2])
-    print(cell_height, cell_width)
-    print(grid_w)
-    print(grid_h)
     cv2.imshow('grid', grid)
+    cv2.imshow('grid', cell)
+    
+    print(f"frame H&W:   {(frame_h, frame_w )}\ncells H&W:   {(cell_height, cell_width)}\ngrid H&W:    {(grid_h,grid_w)}")
+    
     for h in range(0, frame_h, cell_height):
         for w in range(0, frame_w, cell_width, ):            
+            #print(f"frame[{h}:{h+cell_height}, {w}:{w+cell_width}]")
             if (frame[h:h+cell_height, w:w+cell_width].any())==0:
+                #print("is Null\n --- ")
                 grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 0
             #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
             else:
+                #print("is Ok\n --- ")
                 grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 255
             #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
                 
@@ -152,7 +168,7 @@ p_dim = {'width':80, 'height': 400}
 
 while True:
 #---------- BEGINING TO READ
-    frame = cv2.imread(address_list[1])
+    frame = cv2.imread(address_list[0])
     frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
@@ -179,6 +195,7 @@ while True:
     mask, min_contour = create_mask(mask, cntrs)
     grid_cell_w = min_contour[0]
     grid_cell_h = min_contour[1]
+    print(f"grid_cell_w:{grid_cell_w} grid_cell_h:{grid_cell_h}")
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
     # -- -- -- convert given size in cm to pixles
