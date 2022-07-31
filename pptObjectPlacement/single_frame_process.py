@@ -96,14 +96,10 @@ def grid(frame, cell_width, cell_height):
     print(grid_h)
     cv2.imshow('grid', grid)
     for h in range(0, frame_h, cell_height):
-        print(f"h:{h}")
-        for w in range(0, frame_w, cell_width, ):
-            print(f"w:{w}")
-            
+        for w in range(0, frame_w, cell_width, ):            
             if (frame[h:h+cell_height, w:w+cell_width].any())==0:
                 grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 0
             #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
-            #    
             else:
                 grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 255
             #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
@@ -147,7 +143,7 @@ address_list = ['./img samples/01.jpg',
 #}
 
 obj_dim = [
-    { 'width':10    ,'height':5 },
+    { 'width':150    ,'height':50 },
     { 'width':5    ,'height':10 },
     { 'width':8    ,'height':8 }
 ]
@@ -181,8 +177,8 @@ while True:
     #print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
     mask, min_contour = create_mask(mask, cntrs)
-    grid_w = min_contour[0]
-    grid_h = min_contour[1]
+    grid_cell_w = min_contour[0]
+    grid_cell_h = min_contour[1]
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
     # -- -- -- convert given size in cm to pixles
@@ -199,7 +195,9 @@ while True:
     #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
     # -- -- -- CREATE GRID FRAME AND ASSIGN VALUES FOR EACH GRID CELL
-    grid_frame = grid(mask, grid_w, grid_h)    
+    #print(f"object:{obj_dim[0]['width'], obj_dim[0]['height']}")
+    #grid_frame = grid(mask, obj_dim[0]['width'], obj_dim[0]['height'])
+    grid_frame = grid(mask, grid_cell_w, grid_cell_h)
        
     
     
