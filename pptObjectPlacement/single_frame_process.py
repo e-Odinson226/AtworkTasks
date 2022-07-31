@@ -103,10 +103,9 @@ def grid(frame, cell_width, cell_height):
     grid_w = int(frame_w / cell_width)
     grid_h = int(frame_h / cell_height)
     grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
-    cell = np.ones((cell_height, cell_width), dtype="uint8") * 255
     
-    cv2.imshow('grid', grid)
-    cv2.imshow('cell', cell)
+    # Represent cell in an image for illustration popuses.
+    #cell = np.ones((cell_height, cell_width), dtype="uint8") * 255
     
     #print(f"frame H&W:   {(frame_h, frame_w )}\ncells H&W:   {(cell_height, cell_width)}\ngrid H&W:    {(grid_h,grid_w)}")
     
@@ -124,8 +123,25 @@ def grid(frame, cell_width, cell_height):
                 
     return grid
 
-def place_object():
-    pass
+def star_map(grid_frame):
+    cv2.imshow("grid_frame", grid_frame)
+    for x1 in grid_frame:
+        print()
+        for x2 in x1:
+            if x2 == 255:
+                print('* ',end='')
+            else:
+                print('  ',end='')
+                
+def place_object(grid_frame, object):
+    cv2.imshow("grid_frame", grid_frame)
+    for x1 in grid_frame:
+        print()
+        for x2 in x1:
+            if x2 == 255:
+                print('* ',end='')
+            else:
+                print('  ',end='')
 
 # Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
@@ -207,9 +223,9 @@ while True:
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
     #cv2.imshow("mask", mask)
-    cv2.imshow("Original", original_frame)
+    #cv2.imshow("Original", original_frame)
     #cv2.imshow("masked_frame", masked_frame)
-    cv2.imshow("grid_frame", grid_frame)
+    #cv2.imshow("grid_frame", grid_frame)
 
     if cv2.waitKey(0) & 0xFF == ord('q'):
         break
