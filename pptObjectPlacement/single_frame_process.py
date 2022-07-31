@@ -84,25 +84,29 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
-def grid(frame, min_obs_width, min_obs_height):
+def grid(frame, cell_width, cell_height):
     frame_h, frame_w = frame.shape[:2]
-    grid_w = int(frame_w / min_obs_width)
-    grid_h = int(frame_h / min_obs_height)
+    grid_w = int(frame_w / cell_width)
+    grid_h = int(frame_h / cell_height)
     grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
     
-    
     print(frame.shape[:2])
-    print(min_obs_height, min_obs_width)
-    print(grid_h, grid_w)
-    
-    for h in range(0, frame_h, min_obs_height):
-        for w in range(0, frame_w, min_obs_width):
-            if (frame[h:h+grid_h, w:w+grid_w].any())==0:
-                grid[int((h+min_obs_height)/min_obs_height)-2, int((w+min_obs_width)/min_obs_width)-2] = 0
-                print("B",end=' ')
+    print(cell_height, cell_width)
+    print(grid_w)
+    print(grid_h)
+    cv2.imshow('grid', grid)
+    for h in range(0, frame_h, cell_height):
+        print(f"h:{h}")
+        for w in range(0, frame_w, cell_width, ):
+            print(f"w:{w}")
+            
+            if (frame[h:h+cell_height, w:w+cell_width].any())==0:
+                grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 0
+            #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
+            #    
             else:
-                grid[int((h+min_obs_height)/min_obs_height)-2, int((w+min_obs_width)/min_obs_width)-2] = 255
-                print("W",end=' ')
+                grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 255
+            #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
                 
     return grid
     
