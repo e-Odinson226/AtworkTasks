@@ -29,24 +29,24 @@ def get_contours(frame):
 
 def draw_rectangle(frame, contours):
     error_persent = 1.30
-    (x, y, w, h) = cv2.boundingRect(contours[0])
-    w = int(w * error_persent)
-    h = int(h * error_persent)
+    (xm, ym, wm, hm) = cv2.boundingRect(contours[0])
+    wm = int(wm * error_persent)
+    hm = int(hm * error_persent)
     #print(f"area:{cv2.contourArea(contours[0])}, x:{x} y:{y}, h:{h} w:{w}")
     #cv2.rectangle(frame, (x, y), (x+w, y+h), (0,100,100), 2)
     
     min_contour_area = cv2.contourArea(contours[0])
+    min_contour = (xm, ym, wm, hm)
     for cont in contours:
         contour_area = cv2.contourArea(cont)
         (x,y,w,h) = cv2.boundingRect(cont)
         w = int(w * error_persent)
         h = int(h * error_persent)
-        if contour_area > min_contour_area:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,0), 2)
-        else:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255,255,255), 2)
-            #print(f"x:{x} y:{y}, h:{h} w:{w}")
-            
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0,0,0), 2)
+        if contour_area < min_contour_area:
+            (xm, ym, wm, hm) = (x, y, w, h)
+    
+    cv2.rectangle(frame, (xm, ym), (xm+wm, ym+hm), (0,0,0), 5)
     return frame
 
 def create_mask(mask, contours):
@@ -108,43 +108,23 @@ def grid(frame, cell_width, cell_height):
     cv2.imshow('grid', grid)
     cv2.imshow('cell', cell)
     
-    print(f"frame H&W:   {(frame_h, frame_w )}\ncells H&W:   {(cell_height, cell_width)}\ngrid H&W:    {(grid_h,grid_w)}")
+    #print(f"frame H&W:   {(frame_h, frame_w )}\ncells H&W:   {(cell_height, cell_width)}\ngrid H&W:    {(grid_h,grid_w)}")
     
     for h in range(0, frame_h, cell_height):
         for w in range(0, frame_w, cell_width, ):            
             #print(f"frame[{h}:{h+cell_height}, {w}:{w+cell_width}]")
             if (frame[h:h+cell_height, w:w+cell_width].any())==0:
-                grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 0
+                #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 0
+                grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 0
                 #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
             else:
-                grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 255
+                #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 255
+                grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 255
                 #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
                 
     return grid
     
 
-#def arrange(fov_frame, obj_frame, origin):
-#    fovFrame_w, fovFrame_h = fov_frame.shape[::-1]
-#    objFrame_w, objFrame_h = obj_frame.shape[::-1]
-#    # check sides of object frame for admissible points on fov frame
-#    ## des diameter:
-#    ## asc diameter:
-#    ## top:
-#    ## right:
-#    ## left:
-#    ## bottom:
-#
-#    # if there was no interfere then check all pixels:
-#    for y in range(origin[0], 10):
-#        for x in range(origin[1], 10):
-#            #print(f"{x}*{y}: {fov_frame[y, x]}")
-#            if fov_frame[y, x] == 255:
-#            #    print(True)
-#            #else:   i+=1
-
-#def scale_ratio(frame, lens):
-#    real_distance = lens['pixel_pitch'] * pixels * lens['lens_distance'] / lens['focal_length']
-    
 # Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
                 './img samples/02.jpg',
@@ -168,7 +148,7 @@ p_dim = {'width':80, 'height': 400}
 
 while True:
 #---------- BEGINING TO READ
-    frame = cv2.imread(address_list[0])
+    frame = cv2.imread(address_list[3])
     frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
@@ -212,7 +192,6 @@ while True:
     #    cv2.rectangle(masked_frame, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
     
     # -- -- -- CREATE GRID FRAME AND ASSIGN VALUES FOR EACH GRID CELL
-    #print(f"object:{obj_dim[0]['width'], obj_dim[0]['height']}")
     #grid_frame = grid(mask, obj_dim[0]['width'], obj_dim[0]['height'])
     grid_frame = grid(mask, grid_cell_w, grid_cell_h)
        
