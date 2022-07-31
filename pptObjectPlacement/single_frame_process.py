@@ -53,7 +53,7 @@ def create_mask(mask, contours):
     (x, y, w, h) = cv2.boundingRect(contours[0])
     w = int(w * error_persent)
     h = int(h * error_persent)
-    min_contour = [w, h]
+    min_contour = [h, w]
     min_contour_area = cv2.contourArea(contours[0])
     # Set a +1.3 coefficient as predicted error
     
@@ -75,7 +75,7 @@ def create_mask(mask, contours):
         h = int(h * error_persent)
         cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
         if contour_area < min_contour_area:
-            min_contour = [w, h]
+            min_contour = [h, w]
             # TESTING PORPUSES
             #minCont = cont
     # TESTING PORPUSES
@@ -97,11 +97,17 @@ def convert_cm2pixle(dimention, lens):
 def create_template(dimention):
     return np.ones((dimention['height'], dimention['width']), dtype="uint8") * 255
 
-def grid(frame, cell_width, cell_height):
+def grid(frame, grid_cell, object):
+    available =[]
     frame_h, frame_w = frame.shape[:2]
-    grid_w = int(frame_w / cell_width)
-    grid_h = int(frame_h / cell_height)
-    grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
+    cell_height = grid_cell[0]
+    cell_width = grid_cell[1]
+    object_height = object[0]
+    object_width = object[1]
+
+    #grid_w = int(frame_w / cell_width)
+    #grid_h = int(frame_h / cell_height)
+    #grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
     
     # Represent cell in an image for illustration popuses.
     #cell = np.ones((cell_height, cell_width), dtype="uint8") * 255
@@ -111,16 +117,17 @@ def grid(frame, cell_width, cell_height):
     for h in range(0, frame_h, cell_height):
         for w in range(0, frame_w, cell_width, ):            
             #print(f"frame[{h}:{h+cell_height}, {w}:{w+cell_width}]")
-            if (frame[h:h+cell_height, w:w+cell_width].any())==0:
+            if (frame[h:h+object_height, w:w+object_width].all()):
                 #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 0
-                grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 0
+                #grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 0
+                available.append([(h, w),(h+object_height, w+object_width)])
                 #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
-            else:
-                #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 255
-                grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 255
-                #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
+            #else:
+            #    #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 255
+            #    #grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 255
+            #    #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
                 
-    return grid
+    return available
 
 def star_map(grid_frame):
     cv2.imshow("grid_frame", grid_frame)
@@ -132,18 +139,18 @@ def star_map(grid_frame):
             else:
                 print('  ',end='')
                 
-def place_object(grid_frame, object):
-    grid_frame_h, grid_frame_w = grid_frame.shape[:2]
-    object_height = object['height']
-    object_width = object['width']
-    print(f"Obj Width:{object_width}, Obj Height:{object_height}")
-    
-    for row in range(grid_frame_h):
-        for column in range(grid_frame_w):
-            print(grid_frame[row:row+object_height, column:column+object_width].all()==0)
-            if not(grid_frame[row:row+object_height, column:column+object_width].all() == 0):
-                return [(row, column), (row+object_height, column+object_width)]
-                
+#def place_object(grid_frame, object):
+#    grid_frame_h, grid_frame_w = grid_frame.shape[:2]
+#    object_height = object['height']
+#    object_width = object['width']
+#    print(f"Obj Width:{object_width}, Obj Height:{object_height}")
+#    
+#    for row in range(grid_frame_h):
+#        for column in range(grid_frame_w):
+#            print(grid_frame[row:row+object_height, column:column+object_width].all()==0)
+#            if not(grid_frame[row:row+object_height, column:column+object_width].all() == 0):
+#                return [(row, column), (row+object_height, column+object_width)]
+#                
 
 # Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
@@ -159,9 +166,9 @@ address_list = ['./img samples/01.jpg',
 #}
 
 obj_dim = [
-    { 'height':50, 'width':150},
-    { 'height':10, 'width':5},
-    { 'height':8, 'width':8}
+    (50, 150),
+    (10, 5),
+    (8, 8)
 ]
 # temporary set pixle dimentions as static
 p_dim = {'width':80, 'height': 400}
@@ -193,9 +200,9 @@ while True:
     # -- -- -- loop through contours and create a mask of True(s) and Flase(s)
     #print(frame.shape[:2])
     mask = np.ones(frame.shape[:2], dtype="uint8") * 255
-    mask, min_contour = create_mask(mask, cntrs)
-    grid_cell_w = min_contour[0]
-    grid_cell_h = min_contour[1]
+    mask, grid_cell = create_mask(mask, cntrs)
+    #grid_cell_w = min_contour[0]
+    #grid_cell_h = min_contour[1]
     #print(f"grid_cell_w:{grid_cell_w} grid_cell_h:{grid_cell_h}")
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
@@ -214,14 +221,14 @@ while True:
     
     # -- -- -- CREATE GRID FRAME AND ASSIGN VALUES FOR EACH GRID CELL
     #grid_frame = grid(mask, obj_dim[0]['width'], obj_dim[0]['height'])
-    grid_frame = grid(mask, grid_cell_w, grid_cell_h)
+    available_grids = grid(mask, grid_cell, obj_dim[0])
     
     
     # -- -- -- CHECK [grid_frame] GRID BY GRID FOR A PLACE WITH DIMENTION OF OBJECT THAT'S BEEN CHOOSED TO PLACE.
     #available_grids = star_map(grid_frame)
-    available_grids = place_object(grid_frame, obj_dim[0])
     print(f"available grid:{available_grids}")
-    cv2.rectangle(grid_frame, available_grids[0], available_grids[1], (0,0,255), -1)
+    #original_frame = draw_rectangle(original_frame, cntrs)
+    #cv2.rectangle(grid_frame, available_grids[0], available_grids[1], (0,0,255), -1)
     
     #print("----------------------------------------------------------")
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
@@ -230,7 +237,7 @@ while True:
     cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
     cv2.imshow("masked_frame", masked_frame)
-    cv2.imshow("grid_frame", grid_frame)
+    
 
     if cv2.waitKey(0) & 0xFF == ord('q'):
         break
