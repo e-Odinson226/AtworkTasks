@@ -50,11 +50,13 @@ def draw_rectangle(frame, contours):
     return frame
 
 def create_mask(mask, contours):
-    (_, _, w, h) = cv2.boundingRect(contours[0])
+    error_persent = 1.30
+    (x, y, w, h) = cv2.boundingRect(contours[0])
+    w = int(w * error_persent)
+    h = int(h * error_persent)
     min_contour = [w, h]
     min_contour_area = cv2.contourArea(contours[0])
     # Set a +1.3 coefficient as predicted error
-    error_persent = 1.30
     
     for cont in contours:
         contour_area = cv2.contourArea(cont)
@@ -101,10 +103,10 @@ def grid(frame, cell_width, cell_height):
     grid_w = int(frame_w / cell_width)
     grid_h = int(frame_h / cell_height)
     grid = np.ones((grid_h, grid_w), dtype="uint8") * 255
-    cell = np.ones((cell_width, cell_height), dtype="uint8") * 255
+    cell = np.ones((cell_height, cell_width), dtype="uint8") * 255
     
     cv2.imshow('grid', grid)
-    cv2.imshow('grid', cell)
+    cv2.imshow('cell', cell)
     
     print(f"frame H&W:   {(frame_h, frame_w )}\ncells H&W:   {(cell_height, cell_width)}\ngrid H&W:    {(grid_h,grid_w)}")
     
@@ -112,13 +114,11 @@ def grid(frame, cell_width, cell_height):
         for w in range(0, frame_w, cell_width, ):            
             #print(f"frame[{h}:{h+cell_height}, {w}:{w+cell_width}]")
             if (frame[h:h+cell_height, w:w+cell_width].any())==0:
-                #print("is Null\n --- ")
-                grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 0
-            #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
+                grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 0
+                #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
             else:
-                #print("is Ok\n --- ")
-                grid[int((h/cell_height)-1), int((w/cell_width)-1)] = 255
-            #    print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
+                grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 255
+                #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
                 
     return grid
     
@@ -195,7 +195,7 @@ while True:
     mask, min_contour = create_mask(mask, cntrs)
     grid_cell_w = min_contour[0]
     grid_cell_h = min_contour[1]
-    print(f"grid_cell_w:{grid_cell_w} grid_cell_h:{grid_cell_h}")
+    #print(f"grid_cell_w:{grid_cell_w} grid_cell_h:{grid_cell_h}")
     masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
     
     # -- -- -- convert given size in cm to pixles
@@ -218,13 +218,13 @@ while True:
        
     
     
-    print("----------------------------------------------------------")
-    print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
-    print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
-    print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
-    cv2.imshow("mask", mask)
+    #print("----------------------------------------------------------")
+    #print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
+    #print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
+    #print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
+    #cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
-    cv2.imshow("masked_frame", masked_frame)
+    #cv2.imshow("masked_frame", masked_frame)
     cv2.imshow("grid_frame", grid_frame)
 
     if cv2.waitKey(0) & 0xFF == ord('q'):
