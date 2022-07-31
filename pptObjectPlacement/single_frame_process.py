@@ -123,7 +123,9 @@ def grid(frame, cell_width, cell_height):
                 #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
                 
     return grid
-    
+
+def place_object():
+    pass
 
 # Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
@@ -194,7 +196,10 @@ while True:
     # -- -- -- CREATE GRID FRAME AND ASSIGN VALUES FOR EACH GRID CELL
     #grid_frame = grid(mask, obj_dim[0]['width'], obj_dim[0]['height'])
     grid_frame = grid(mask, grid_cell_w, grid_cell_h)
-       
+    
+    
+    # -- -- -- CHECK [grid_frame] GRID BY GRID FOR A PLACE WITH DIMENTION OF OBJECT THAT'S BEEN CHOOSED TO PLACE.
+    available_grids = place_object(grid_frame, obj_dim)
     
     
     #print("----------------------------------------------------------")
