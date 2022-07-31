@@ -134,14 +134,16 @@ def star_map(grid_frame):
                 print('  ',end='')
                 
 def place_object(grid_frame, object):
+    object_height = object['height']
+    object_width = object['width']
     cv2.imshow("grid_frame", grid_frame)
-    for x1 in grid_frame:
+    for row in grid_frame:
         print()
-        for x2 in x1:
-            if x2 == 255:
-                print('* ',end='')
-            else:
-                print('  ',end='')
+        for column in row:
+            if (grid_frame[row:row+object_height, column:column+object_width].all() == 255):
+                
+                return [(row, column), (row+object_height, column+object_width)]
+                
 
 # Implementation with example frames -----------------------------------------
 address_list = ['./img samples/01.jpg',
@@ -157,9 +159,9 @@ address_list = ['./img samples/01.jpg',
 #}
 
 obj_dim = [
-    { 'width':150    ,'height':50 },
-    { 'width':5    ,'height':10 },
-    { 'width':8    ,'height':8 }
+    { 'height':50, 'width':150},
+    { 'height':10, 'width':5},
+    { 'height':8, 'width':8}
 ]
 # temporary set pixle dimentions as static
 p_dim = {'width':80, 'height': 400}
@@ -215,17 +217,18 @@ while True:
     
     
     # -- -- -- CHECK [grid_frame] GRID BY GRID FOR A PLACE WITH DIMENTION OF OBJECT THAT'S BEEN CHOOSED TO PLACE.
-    available_grids = place_object(grid_frame, obj_dim)
+    #available_grids = star_map(grid_frame)
+    available_grids = place_object(grid_frame, obj_dim[0])
     
     
     #print("----------------------------------------------------------")
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
-    #cv2.imshow("mask", mask)
-    #cv2.imshow("Original", original_frame)
-    #cv2.imshow("masked_frame", masked_frame)
-    #cv2.imshow("grid_frame", grid_frame)
+    cv2.imshow("mask", mask)
+    cv2.imshow("Original", original_frame)
+    cv2.imshow("masked_frame", masked_frame)
+    cv2.imshow("grid_frame", grid_frame)
 
     if cv2.waitKey(0) & 0xFF == ord('q'):
         break
