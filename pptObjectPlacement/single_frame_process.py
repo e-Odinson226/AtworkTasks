@@ -36,7 +36,6 @@ def draw_rectangle(frame, contours):
     #cv2.rectangle(frame, (x, y), (x+w, y+h), (0,100,100), 2)
     
     min_contour_area = cv2.contourArea(contours[0])
-    min_contour = (xm, ym, wm, hm)
     for cont in contours:
         contour_area = cv2.contourArea(cont)
         (x,y,w,h) = cv2.boundingRect(cont)
@@ -134,14 +133,15 @@ def star_map(grid_frame):
                 print('  ',end='')
                 
 def place_object(grid_frame, object):
+    grid_frame_h, grid_frame_w = grid_frame.shape[:2]
     object_height = object['height']
     object_width = object['width']
-    cv2.imshow("grid_frame", grid_frame)
-    for row in grid_frame:
-        print()
-        for column in row:
-            if (grid_frame[row:row+object_height, column:column+object_width].all() == 255):
-                
+    print(f"Obj Width:{object_width}, Obj Height:{object_height}")
+    
+    for row in range(grid_frame_h):
+        for column in range(grid_frame_w):
+            print(grid_frame[row:row+object_height, column:column+object_width].all()==0)
+            if not(grid_frame[row:row+object_height, column:column+object_width].all() == 0):
                 return [(row, column), (row+object_height, column+object_width)]
                 
 
@@ -168,8 +168,9 @@ p_dim = {'width':80, 'height': 400}
 
 while True:
 #---------- BEGINING TO READ
-    frame = cv2.imread(address_list[3])
-    frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
+    frame = cv2.imread(address_list[2])
+    #frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
+    frame = cv2.resize(frame, (1280, 720))
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
 
@@ -219,7 +220,8 @@ while True:
     # -- -- -- CHECK [grid_frame] GRID BY GRID FOR A PLACE WITH DIMENTION OF OBJECT THAT'S BEEN CHOOSED TO PLACE.
     #available_grids = star_map(grid_frame)
     available_grids = place_object(grid_frame, obj_dim[0])
-    
+    print(f"available grid:{available_grids}")
+    cv2.rectangle(grid_frame, available_grids[0], available_grids[1], (0,0,255), -1)
     
     #print("----------------------------------------------------------")
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
