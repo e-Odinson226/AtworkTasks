@@ -138,7 +138,11 @@ def star_map(grid_frame):
                 print('* ',end='')
             else:
                 print('  ',end='')
-                
+
+def draw_available_grids(frame, available_grids):
+    for grid in available_grids:
+        cv2.rectangle(frame, grid[0], grid[1], (255,0,255), 1)
+
 #def place_object(grid_frame, object):
 #    grid_frame_h, grid_frame_w = grid_frame.shape[:2]
 #    object_height = object['height']
@@ -176,8 +180,8 @@ p_dim = {'width':80, 'height': 400}
 while True:
 #---------- BEGINING TO READ
     frame = cv2.imread(address_list[2])
-    #frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
-    frame = cv2.resize(frame, (1280, 720))
+    frame = cv2.resize(frame, (1280, 720), interpolation= cv2.INTER_AREA)
+    #frame = cv2.resize(frame, (1280, 720))
 # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
     begin = time.time()
 
@@ -222,19 +226,24 @@ while True:
     # -- -- -- CREATE GRID FRAME AND ASSIGN VALUES FOR EACH GRID CELL
     #grid_frame = grid(mask, obj_dim[0]['width'], obj_dim[0]['height'])
     available_grids = grid(mask, grid_cell, obj_dim[0])
-    
+    #draw_rectangle()
     
     # -- -- -- CHECK [grid_frame] GRID BY GRID FOR A PLACE WITH DIMENTION OF OBJECT THAT'S BEEN CHOOSED TO PLACE.
+    # -- -- -- ATTENTION: THIS TASK IS DONE IN PREVIOUS PART BY {grid} FUNCTION.
     #available_grids = star_map(grid_frame)
-    print(f"available grid:{available_grids}")
+    #print(f"available grid:{available_grids}")
     #original_frame = draw_rectangle(original_frame, cntrs)
     #cv2.rectangle(grid_frame, available_grids[0], available_grids[1], (0,0,255), -1)
+    
+    # -- -- -- DRAW AVAILABLE GRIDS ON ORIGINAL FRAME ALONG THE MASKED AREA AND...
+    draw_available_grids(original_frame, available_grids)
+    
     
     #print("----------------------------------------------------------")
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
-    cv2.imshow("mask", mask)
+    #cv2.imshow("mask", mask)
     cv2.imshow("Original", original_frame)
     cv2.imshow("masked_frame", masked_frame)
     
