@@ -104,6 +104,7 @@ def grid(frame, grid_cell, object):
     cell_width = grid_cell[1]
     object_height = object[0]
     object_width = object[1]
+    print(f"f_h:{frame_h} -- f_w:{frame_w} -- c_h:{cell_height} -- c_w:{cell_width} -- o_h:{object_height} -- o_w:{object_width}")
 
     #grid_w = int(frame_w / cell_width)
     #grid_h = int(frame_h / cell_height)
@@ -115,18 +116,18 @@ def grid(frame, grid_cell, object):
     #print(f"frame H&W:   {(frame_h, frame_w )}\ncells H&W:   {(cell_height, cell_width)}\ngrid H&W:    {(grid_h,grid_w)}")
     
     for h in range(0, frame_h, cell_height):
-        for w in range(0, frame_w, cell_width, ):            
+        for w in range(0, frame_w, cell_width, ):
             #print(f"frame[{h}:{h+cell_height}, {w}:{w+cell_width}]")
             if (frame[h:h+object_height, w:w+object_width].all()):
                 #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 0
                 #grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 0
-                available.append([(h, w),(h+object_height, w+object_width)])
+                #print(f"h:{h},w:{w},h+o_h:{h+object_height},w+o_w:{w+object_width}")
+                available.append([(w, h), (w+object_width, h+object_height)])
                 #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
             #else:
             #    #grid[int(((h+cell_height)/cell_height)-2), int(((w+cell_width)/cell_width)-2)] = 255
             #    #grid[int(((h)/cell_height)-1), int(((w)/cell_width)-1)] = 255
             #    #print(f"----{int((h/cell_height)-1), int((w/cell_width)-1)}")
-                
     return available
 
 def star_map(grid_frame):
@@ -141,7 +142,8 @@ def star_map(grid_frame):
 
 def draw_available_grids(frame, available_grids):
     for grid in available_grids:
-        cv2.rectangle(frame, grid[0], grid[1], (255,0,255), 1)
+        #cv2.rectangle(frame, (w, h), (w+object_width, h+object_height), (255,0,255), 1)
+        cv2.rectangle(frame, grid[0], grid[1], (255,255,0), 1)
 
 #def place_object(grid_frame, object):
 #    grid_frame_h, grid_frame_w = grid_frame.shape[:2]
@@ -236,15 +238,15 @@ while True:
     #cv2.rectangle(grid_frame, available_grids[0], available_grids[1], (0,0,255), -1)
     
     # -- -- -- DRAW AVAILABLE GRIDS ON ORIGINAL FRAME ALONG THE MASKED AREA AND...
-    draw_available_grids(original_frame, available_grids)
+    draw_available_grids(masked_frame, available_grids)
     
     
     #print("----------------------------------------------------------")
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='mask', shape=mask.shape, dtype=mask.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='original_frame', shape=original_frame.shape, dtype=original_frame.dtype))
     #print("{img} shape: {shape}, dataType:{dtype}".format(img='masked_frame', shape=masked_frame.shape, dtype=masked_frame.dtype))
-    #cv2.imshow("mask", mask)
-    cv2.imshow("Original", original_frame)
+    cv2.imshow("mask", mask)
+    #cv2.imshow("Original", original_frame)
     cv2.imshow("masked_frame", masked_frame)
     
 
