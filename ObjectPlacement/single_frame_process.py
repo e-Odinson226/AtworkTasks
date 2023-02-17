@@ -249,7 +249,7 @@ p_dim = {"width": 80, "height": 400}
 
 while True:
     # ---------- BEGINING TO READ
-    frame = cv2.imread(address_list[1])
+    frame = cv2.imread(address_list[4])
     frame = cv2.resize(frame, (1280, 720), interpolation=cv2.INTER_AREA)
     # frame = cv2.resize(frame, (1280, 720))
     # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
