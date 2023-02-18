@@ -1,5 +1,6 @@
 import cv2
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from tools import show_image_list
 
 # def gsoc(self):
@@ -63,14 +64,12 @@ if __name__ == "__main__":
     im3 = ax3.imshow(bgd.moG2(get_frame(cap)))
     # ----------------------------------------
 
-    plt.ion()
+    def update(i):
 
-    while True:
         im0.set_data(get_frame(cap))
         im1.set_data(bgd.doG(get_frame(cap), 7, 7, 17, 13))
         im2.set_data(bgd.kNN(get_frame(cap)))
         im3.set_data(bgd.moG2(get_frame(cap)))
-        plt.pause(0.16)
 
-    plt.ioff()  # due to infinite loop, this gets never called.
+    ani = FuncAnimation(plt.gcf(), update, interval=200)
     plt.show()
