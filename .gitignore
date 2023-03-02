@@ -4,3 +4,5 @@ test_images*
 __pycache__
 *.jpg
 *.avi
+*.vscode
+*.zip

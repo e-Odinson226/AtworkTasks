@@ -3,30 +3,28 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from tools import show_image_list
 
-# def gsoc(self):
-#    cv.bgse
 
 
-class BackgroundDetector(object):
-    def __init__(self):
-        self.backGroundSubMOG2 = cv2.createBackgroundSubtractorMOG2()
-        self.backGroundSubKNN = cv2.createBackgroundSubtractorKNN()
 
-    def doG(self, frame, kernel_0, sigma_0, kernel_1, sigma_1):
-        gaussianBlur_0 = cv2.GaussianBlur(frame, (kernel_0, kernel_0), sigma_0)
-        gaussianBlur_1 = cv2.GaussianBlur(frame, (kernel_1, kernel_1), sigma_1)
-        return gaussianBlur_0 - gaussianBlur_1
+def __init__(self):
+    self.backGroundSubMOG2 = cv2.createBackgroundSubtractorMOG2()
+    self.backGroundSubKNN = cv2.createBackgroundSubtractorKNN()
 
-    def moG2(self, frame):
-        img = self.backGroundSubMOG2.apply(frame)
-        return img
+def doG(self, frame, kernel_0, sigma_0, kernel_1, sigma_1):
+    gaussianBlur_0 = cv2.GaussianBlur(frame, (kernel_0, kernel_0), sigma_0)
+    gaussianBlur_1 = cv2.GaussianBlur(frame, (kernel_1, kernel_1), sigma_1)
+    return gaussianBlur_0 - gaussianBlur_1
 
-    def kNN(self, frame):
-        img = self.backGroundSubKNN.apply(frame)
-        return img
+def moG2(self, frame):
+    img = self.backGroundSubMOG2.apply(frame)
+    return img
 
-    def gMG(self, frame):
-        pass
+def kNN(self, frame):
+    img = self.backGroundSubKNN.apply(frame)
+    return img
+
+def gMG(self, frame):
+    pass
 
 
 def get_frame(cap):
