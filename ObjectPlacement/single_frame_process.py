@@ -3,6 +3,7 @@ import time
 import cv2
 import numpy as np
 
+
 # preprocess_frame:
 #   TAKES [frame],
 #   DOES [flip and grayscale],
@@ -231,11 +232,11 @@ def draw_available_grids(frame, available_grids):
 
 # Implementation with example frames -----------------------------------------
 address_list = [
-    "./img samples/01.jpg",
-    "./img samples/02.jpg",
-    "./img samples/03.jpg",
-    "./img samples/04.jpg",
-    "./img samples/05.jpg",
+    "./ObjectPlacement/img samples/01.jpg",
+    "./ObjectPlacement/img samples/02.jpg",
+    "./ObjectPlacement/img samples/03.jpg",
+    "./ObjectPlacement/img samples/04.jpg",
+    "./ObjectPlacement/img samples/05.jpg",
 ]
 # lens = {
 #    'focal_length'  : 4.7 mili,
@@ -249,7 +250,7 @@ p_dim = {"width": 80, "height": 400}
 
 while True:
     # ---------- BEGINING TO READ
-    frame = cv2.imread(address_list[4])
+    frame = cv2.imread(address_list[2])
     frame = cv2.resize(frame, (1280, 720), interpolation=cv2.INTER_AREA)
     # frame = cv2.resize(frame, (1280, 720))
     # -- -- -- BEGINING TO DO COMPUTING ON FRAMES
