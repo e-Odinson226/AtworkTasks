@@ -16,6 +16,9 @@ Goal(s):
     # try 1: 1401/04 - 1401/06
         Approach:
             using basic threshold and color segmentation.
+        
+        []  1.choose preprocessing algorithms [blur,...]
+        []  2.display two output [one for regular frame, another for depth frame]
 
         Result:
             it is not accurate and results are not good enough.
@@ -24,6 +27,12 @@ Goal(s):
     # try 2: 1401/11 - 1401/12
         Approach:
             using OpenCV's background subtraction and gaussian mixture algorithms.
+        
+        []  KNN: is ok.
+        []  GSOC:
+        []  DOG:
+        []  GNG:
+        []  MOG2:
 
         Result:
             better than last approach but has bug and fails at some point when there is environment effects such as,
