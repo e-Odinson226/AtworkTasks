@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-cap = cv2.VideoCapture("video.avi")
+cap = cv2.VideoCapture("color_Axis.avi")
 
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
 fgbg = cv2.createBackgroundSubtractorGMG()

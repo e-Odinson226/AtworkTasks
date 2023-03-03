@@ -4,7 +4,7 @@ import cv2
 
 # frame = cv2.imread("../test_images/Axis_4.jpg")
 
-cap = cv2.VideoCapture("video.avi")
+cap = cv2.VideoCapture("color_Axis.avi")
 
 fgbg = cv2.createBackgroundSubtractorKNN()
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))

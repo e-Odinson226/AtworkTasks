@@ -1,0 +1,1 @@
+trying to detect background with opencv's mixture of gaussian methods, results are not acceptable.
