@@ -26,7 +26,7 @@ def convert_frames_to_video(pathIn, pathOut, fps):
 
 
 def main():
-    pathIn = "../ImageDataset_makan_100/Color/"
+    pathIn = "dataset/ImageDataset_makan_100/Color/"
 
     pathOut = "video.avi"
     fps = 45.0

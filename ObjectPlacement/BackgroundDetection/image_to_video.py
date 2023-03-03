@@ -40,9 +40,9 @@ def main():
         {"name": "R20", "length": 4},
     ]
     for obj in obj_list:
-        pathIn = "dataset/dataset2/dac/" + str(obj["name"])
+        pathIn = "../dataset/dataset2/dac/" + str(obj["name"])
 
-        pathOut = "color_" + str(obj["name"]) + ".avi"
+        pathOut = str(obj["name"]) + ".avi"
         fps = 30.0
         convert_frames_to_video(pathIn, obj["length"], pathOut, fps)
 

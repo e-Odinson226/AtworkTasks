@@ -12,28 +12,39 @@ Goal(s):
     the robot should place objects according to their dimensions and platform's available areas.
     
     STATE: developing
-
-    try 1: 1401/04 - 1401/06
+    
+    # try 1: 1401/04 - 1401/06
         Approach:
             using basic threshold and color segmentation.
 
         Result:
             it is not accurate and results are not good enough.
+    ------------------------------
     
-    try 2: 1401/11 - 1401/12
+    # try 2: 1401/11 - 1401/12
         Approach:
             using OpenCV's background subtraction and gaussian mixture algorithms.
 
         Result:
             better than last approach but has bug and fails at some point when there is environment effects such as,
             light rays or platform material texture(like grass or wood texture).
-
-    try 3: 1401/12 - ???
+    ------------------------------
+    
+    # try 3: 1401/12 - ???
         Approach:
             using depth data to find objects.
 
         Result:
             ???
+    ------------------------------
+    
+    # try 4: 1401/12 - ???
+        Approach:
+            create a custom lightweight object detection tool. 
+
+        Result:
+            ???
+    ------------------------------
 
 
         

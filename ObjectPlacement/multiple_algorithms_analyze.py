@@ -11,7 +11,7 @@ def median_adaptive_th(frame):
     blur = cv2.medianBlur(frame, 13)
     # blur = cv2.GaussianBlur(frame, (7, 7), 13)
     median_adaptive_th = cv2.adaptiveThreshold(
-        blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 17, 7
+        blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 13, 7
     )
     return median_adaptive_th
 
@@ -119,10 +119,11 @@ dataset_list = [
     "dataset/color/Distance_tube.avi",
     "dataset/color/M20_100.avi",
     "dataset/color/R20.avi",
+    "dataset/color/video.avi",
 ]
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(dataset_list[5])
+    cap = cv2.VideoCapture(dataset_list[-1])
 
     # --------------------------------------
 
