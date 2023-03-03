@@ -33,31 +33,32 @@ def get_frame(cap):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture("video.avi")
+    cap = cv2.VideoCapture("dataset/video/color/video.avi")
 
     bgs_mog2 = cv2.createBackgroundSubtractorMOG2()
     bgs_knn = cv2.createBackgroundSubtractorKNN()
     bgs_gsoc = cv2.bgsegm.createBackgroundSubtractorGSOC()
+    # bgs_ = cv2.bgsegm.createBackgroundSubtractorGSOC()
 
     # ----------------------------------------
     ax0 = plt.subplot(2, 2, 1)
     plt.title("frame")
     ax1 = plt.subplot(2, 2, 2)
-    plt.title("DOG")
+    plt.title("MOG")
     ax2 = plt.subplot(2, 2, 3)
-    plt.title("MOG2")
-    ax3 = plt.subplot(2, 2, 4)
     plt.title("KNN")
+    ax3 = plt.subplot(2, 2, 4)
+    plt.title("GSOC")
 
     # ----------------------------------------
     im0 = ax0.imshow(get_frame(cap))
-    im1 = ax1.imshow(bgs_mog2.apply(get_frame(cap), 7, 7, 17, 13))
+    im1 = ax1.imshow(bgs_mog2.apply(get_frame(cap)))
     im2 = ax2.imshow(bgs_knn.apply(get_frame(cap)))
     im3 = ax3.imshow(bgs_gsoc.apply(get_frame(cap)))
 
     def update(i):
         im0.set_data(get_frame(cap))
-        im1.set_data(bgs_mog2(get_frame(cap), 7, 7, 17, 13))
+        im1.set_data(bgs_mog2.apply(get_frame(cap)))
         im2.set_data(bgs_knn.apply(get_frame(cap)))
         im3.set_data(bgs_gsoc.apply(get_frame(cap)))
 
