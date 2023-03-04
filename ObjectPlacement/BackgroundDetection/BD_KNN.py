@@ -11,7 +11,7 @@ def draw_rect_for_contours(frame, contours, hierarchy):
     except:
         hierarchy = []
 
-    height, width = foreground_mask.shape
+    height, width = frame.shape[:2]
     min_x, min_y = width, height
     max_x = max_y = 0
 
