@@ -1,40 +1,83 @@
 from matplotlib import pyplot as plt
 import time
-import cv2
+import cv2 as cv
 import numpy as np
 
 
-def capture_frame(address):
-    try:
-        frame = cv2.imread(address)
-    except ValueError:
-        cap = cv2.VideoCapture(address)
-        _, frame = cap.read()
+def process(frame):
+    frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    blur = cv.GaussianBlur(frame, (5, 5), 0)
+    ret3, th3 = cv.threshold(blur, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    # th2 = cv.adaptiveThreshold(
+    #    blur, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2
+    # )
+    return th3
+
+
+def detect_contour(frame):
+    contours, hierarchy = cv.findContours(
+        frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+    )
+
+    return contours
+
+
+def draw_objects(frame, contours):
+    error_persent = 1.30
+    (xm, ym, wm, hm) = cv.boundingRect(contours[0])
+    wm = int(wm * error_persent)
+    hm = int(hm * error_persent)
+
+    min_contour_area = cv.contourArea(contours[0])
+    for cont in contours:
+        contour_area = cv.contourArea(cont)
+        (x, y, w, h) = cv.boundingRect(cont)
+        w = int(w * error_persent)
+        h = int(h * error_persent)
+        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 0), 2)
+        if contour_area < min_contour_area:
+            (xm, ym, wm, hm) = (x, y, w, h)
+
+    cv.rectangle(frame, (xm, ym), (xm + wm, ym + hm), (0, 0, 0), 5)
     return frame
 
 
 if __name__ == "__main__":
-    address = "x"
+    address = (
+        "/home/zakaria/Documents/Projects/AtworkTasks/dataset/video/color/video.avi"
+    )
     # read frame
-    frame = capture_frame(address)
+    cap = cv.VideoCapture(address)
+    success, frame = cap.read()
 
-    # Process frame
-    processed_frame = process(frame, method)
+    while success:
+        # Process frame
+        processed_frame = process(frame)
 
-    # Display Processed frame
-    cv2.imshow("frame", frame)
+        # Display Processed frame
 
-    # detect contours
-    contours = detect_contour(processed_frame)
+        # detect contours
+        contours = detect_contour(processed_frame)
 
-    # detect objects
-    objects = detect(contours, frame)
+        # detect objects
+        # objects = detect(contours, frame)
 
-    # draw rectangle around objects
-    output_frame = draw_objects(frame, objects)
+        # draw rectangle around objects
+        output_frame = draw_objects(frame, contours)
+        cv.imshow("processed_frame", output_frame)
+
+        success, frame = cap.read()
+        key = cv.waitKey(1)
+        if key == ord("q"):
+            break
+        if key == ord("p"):
+            cv.waitKey(-1)
 
 
-def preprocess_frame(frame):
+cv.destroyAllWindows()
+
+
+""" def preprocess_frame(frame):
     frame = cv2.flip(frame, 1)
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -140,3 +183,4 @@ while True:
 
     if cv2.waitKey(5) & 0xFF == ord("q"):
         break
+ """

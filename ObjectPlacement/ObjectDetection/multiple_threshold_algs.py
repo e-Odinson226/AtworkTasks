@@ -129,9 +129,9 @@ dataset_dac = [
     "dataset/video/dac/M20_100.avi",
     "dataset/video/dac/R20.avi",
 ]
-
+base_folder = "/home/zakaria/Documents/Projects/AtworkTasks/"
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(dataset_dac[-1])
+    cap = cv2.VideoCapture(base_folder + dataset_dac[-1])
 
     # --------------------------------------
 
