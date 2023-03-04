@@ -17,7 +17,10 @@ Goal(s):
         Approach:
             using basic threshold and color segmentation.
         
-        []  1.choose preprocessing algorithms [blur,...]
+        [*]  1.choose preprocessing algorithms [blur,...]
+            [cv.THRESH_BINARY + cv.THRESH_OTSU] was not good enough.
+            [cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY] has far better result.
+
         
 
         Result:

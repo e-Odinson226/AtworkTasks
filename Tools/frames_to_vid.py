@@ -18,7 +18,7 @@ def convert_frames_to_video(pathIn, pathOut, fps):
         print(filename)
         # inserting the frames into an image array
         frame_array.append(img)
-    out = cv2.VideoWriter(pathOut, cv2.VideoWriter_fourcc(*"DIVX"), fps, size)
+    out = cv2.VideoWriter(pathOut, cv2.VideoWriter_fourcc(*"DIVX"), 10, size)
     for i in range(len(frame_array)):
         # writing to a image array
         out.write(frame_array[i])
@@ -26,9 +26,9 @@ def convert_frames_to_video(pathIn, pathOut, fps):
 
 
 def main():
-    pathIn = "dataset/ImageDataset_makan_100/Color/"
+    pathIn = "/home/zakaria/Documents/Projects/AtworkTasks/dataset/ImageDataset_makan_100/Color/"
 
-    pathOut = "video.avi"
+    pathOut = "/home/zakaria/Documents/Projects/AtworkTasks/dataset/video.avi"
     fps = 45.0
     convert_frames_to_video(pathIn, pathOut, fps)
 
