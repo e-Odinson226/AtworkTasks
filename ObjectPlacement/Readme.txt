@@ -18,7 +18,7 @@ Goal(s):
             using basic threshold and color segmentation.
         
         []  1.choose preprocessing algorithms [blur,...]
-        []  2.display two output [one for regular frame, another for depth frame]
+        
 
         Result:
             it is not accurate and results are not good enough.
@@ -42,6 +42,8 @@ Goal(s):
     # try 3: 1401/12 - ???
         Approach:
             using depth data to find objects.
+
+        []  1.Analyze object detection methods on depth data.
 
         Result:
             ???

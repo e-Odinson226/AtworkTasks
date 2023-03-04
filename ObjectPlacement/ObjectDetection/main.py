@@ -4,6 +4,36 @@ import cv2
 import numpy as np
 
 
+def capture_frame(address):
+    try:
+        frame = cv2.imread(address)
+    except ValueError:
+        cap = cv2.VideoCapture(address)
+        _, frame = cap.read()
+    return frame
+
+
+if __name__ == "__main__":
+    address = "x"
+    # read frame
+    frame = capture_frame(address)
+
+    # Process frame
+    processed_frame = process(frame, method)
+
+    # Display Processed frame
+    cv2.imshow("frame", frame)
+
+    # detect contours
+    contours = detect_contour(processed_frame)
+
+    # detect objects
+    objects = detect(contours, frame)
+
+    # draw rectangle around objects
+    output_frame = draw_objects(frame, objects)
+
+
 def preprocess_frame(frame):
     frame = cv2.flip(frame, 1)
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
