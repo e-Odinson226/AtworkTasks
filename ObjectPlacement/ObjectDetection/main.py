@@ -31,24 +31,29 @@ def detect_contour(frame):
         frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
     )
     # return (contours, hierarchy)
-    return contours
+    return (contours, hierarchy)
 
 
-def draw_objects(frame, contours):
-    error_persent = 1.30
-    (xm, ym, wm, hm) = cv.boundingRect(contours[0])
-    wm = int(wm * error_persent)
-    hm = int(hm * error_persent)
+def draw_objects(frame, contours, hierarchy):
+    try:
+        hierarchy = hierarchy[0]
+    except:
+        hierarchy = []
 
-    min_contour_area = cv.contourArea(contours[0])
-    for cont in contours:
-        contour_area = cv.contourArea(cont)
-        (x, y, w, h) = cv.boundingRect(cont)
-        w = int(w * error_persent)
-        h = int(h * error_persent)
-        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 0), 2)
-        if contour_area < min_contour_area:
-            (xm, ym, wm, hm) = (x, y, w, h)
+    height, width = frame.shape[:2]
+    min_x, min_y = width, height
+    max_x = max_y = 0
+
+    # computes the bounding box for the contour, and draws it on the frame,
+    for contour, hier in zip(contours, hierarchy):
+        (x, y, w, h) = cv.boundingRect(contour)
+        min_x, max_x = min(x, min_x), max(x + w, max_x)
+        min_y, max_y = min(y, min_y), max(y + h, max_y)
+        if w > 10 and h > 10:
+            cv.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+    if max_x - min_x > 0 and max_y - min_y > 0:
+        cv.rectangle(frame, (min_x, min_y), (max_x, max_y), (255, 255, 0), 2)
 
     return frame
 
@@ -74,13 +79,13 @@ if __name__ == "__main__":
         cv.imshow("processed_frame", processed_frame)
 
         # detect contours
-        contours = detect_contour(processed_frame)
+        contours, hierarchy = detect_contour(processed_frame)
 
         # detect objects
         # objects = detect(contours, frame)
 
         # draw rectangle around objects
-        mask = draw_objects(frame, contours)
+        mask = draw_objects(frame, contours, hierarchy)
         cv.imshow("output_frame", mask)
 
         success, frame = cap.read()
