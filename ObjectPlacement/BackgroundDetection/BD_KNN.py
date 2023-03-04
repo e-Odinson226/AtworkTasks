@@ -41,9 +41,9 @@ while True:
     ret, frame = cap.read()
 
     foreground_mask = fgbg.apply(frame)
-    foreground_mask_processed = cv.morphologyEx(
+    """ foreground_mask_processed = cv.morphologyEx(
         foreground_mask, cv.MORPH_GRADIENT, kernel
-    )
+    ) """
 
     # detect obj and draw contour
 
