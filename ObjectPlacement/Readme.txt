@@ -31,14 +31,15 @@ Goal(s):
     # try 2: 1401/11 - 1401/12
         Approach:
             using OpenCV's background subtraction and gaussian mixture algorithms.
-        
-        []  KNN: is ok.
-        []  GSOC:
+                    
+        [*]  KNN: 7/10.
+        [*]  GSOC: 5/10
         []  DOG:
         []  GNG:
         []  MOG2:
 
         Result:
+            results are not acceptable.
             better than last approach but has bug and fails at some point when there is environment effects such as,
             light rays or platform material texture(like grass or wood texture).
     ------------------------------

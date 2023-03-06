@@ -1,5 +1,11 @@
-import numpy as np
 import cv2 as cv
+
+
+def dog(frame, low_kernel, low_sigma, high_kernel, high_sigma):
+    frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    low_gaussianBlur = cv.GaussianBlur(frame, (low_kernel, low_kernel), low_sigma)
+    high_gaussianBlur = cv.GaussianBlur(frame, (high_kernel, high_kernel), high_sigma)
+    return low_gaussianBlur - high_gaussianBlur
 
 
 def draw_rect_for_contours(frame, contours, hierarchy):
@@ -17,7 +23,7 @@ def draw_rect_for_contours(frame, contours, hierarchy):
         (x, y, w, h) = cv.boundingRect(contour)
         min_x, max_x = min(x, min_x), max(x + w, max_x)
         min_y, max_y = min(y, min_y), max(y + h, max_y)
-        if w > 50 and h > 50:
+        if w > 80 and h > 80:
             cv.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
     if max_x - min_x > 0 and max_y - min_y > 0:
@@ -30,30 +36,37 @@ if __name__ == "__main__":
     address = (
         "/home/zakaria/Documents/Projects/AtworkTasks/dataset/video/color/video.avi"
     )
+    kernel_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
+    kernel_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+
     # read frame
     cap = cv.VideoCapture(address)
     success, frame = cap.read()
 
-    fgbg = cv.bgsegm.createBackgroundSubtractorGSOC()
-    kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
-
     while success:
-        foreground_mask = fgbg.apply(frame)
+        foreground_mask = dog(
+            frame, low_kernel=3, low_sigma=0, high_kernel=5, high_sigma=0
+        )
         cv.imshow("foreground_mask", foreground_mask)
 
-        foreground_mask_processed = cv.morphologyEx(
-            foreground_mask, cv.MORPH_GRADIENT, kernel
+        # Process frame
+        processed_foreground_mask = cv.morphologyEx(
+            foreground_mask, cv.MORPH_OPEN, kernel_RECT, iterations=1
         )
-        cv.imshow("foreground_mask_processed", foreground_mask_processed)
+        cv.imshow("processed_foreground_mask", processed_foreground_mask)
 
-        # detect obj and draw contour
+        blured_frame = cv.GaussianBlur(processed_foreground_mask, (11, 11), 3)
+        cv.imshow("blured_frame", blured_frame)
 
-        contours, hierarchy = cv.findContours(
-            foreground_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
-        )
+        # contours, hierarchy = cv.findContours(
+        #    foreground_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+        # )
 
-        draw_rect_for_contours(frame, contours, hierarchy)
-        cv.imshow("frame", frame)
+        # draw_rect_for_contours(
+        #    frame,
+        #    contours,
+        #    hierarchy,
+        # )
 
         success, frame = cap.read()
         key = cv.waitKey()
@@ -61,5 +74,6 @@ if __name__ == "__main__":
             break
         if key == ord("p"):
             cv.waitKey(-1)
+
 
 cv.destroyAllWindows()
