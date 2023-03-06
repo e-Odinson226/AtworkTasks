@@ -38,6 +38,7 @@ if __name__ == "__main__":
     )
     kernel_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
     kernel_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    params = [(11, 21, 7), (11, 41, 21), (11, 61, 39)]
 
     # read frame
     cap = cv.VideoCapture(address)
@@ -49,14 +50,20 @@ if __name__ == "__main__":
         )
         cv.imshow("foreground_mask", foreground_mask)
 
+        # blured_frame = cv.GaussianBlur(foreground_mask, (11, 11), 3)
+
+        diameter, sigmaColor, sigmaSpace = params[1]
+        blured_frame = cv.bilateralFilter(
+            foreground_mask, diameter, sigmaColor, sigmaSpace
+        )
+
+        cv.imshow("blured_frame", blured_frame)
+
         # Process frame
         processed_foreground_mask = cv.morphologyEx(
-            foreground_mask, cv.MORPH_OPEN, kernel_RECT, iterations=1
+            blured_frame, cv.MORPH_OPEN, kernel_RECT, iterations=1
         )
         cv.imshow("processed_foreground_mask", processed_foreground_mask)
-
-        blured_frame = cv.GaussianBlur(processed_foreground_mask, (11, 11), 3)
-        cv.imshow("blured_frame", blured_frame)
 
         # contours, hierarchy = cv.findContours(
         #    foreground_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
