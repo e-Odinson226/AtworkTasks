@@ -32,7 +32,30 @@ def draw_rect_for_contours(frame, contours, hierarchy):
     return frame
 
 
+def nothing(x):
+    pass
+
+
+def trackbar(blur_modes={"bilateral": 0, "gaussian": 1}, dog_params=(3, 0, 5, 0)):
+    low_kernel, low_sigma, high_kernel, high_sigma = dog_params
+    cv.namedWindow("Detection Tweaks")
+
+    cv.createTrackbar(
+        "Blur Modes",
+        "Detection Tweaks",
+        blur_modes["bilateral"],
+        blur_modes["gaussian"],
+        nothing,
+    )
+
+    cv.createTrackbar("low_kernel", "Detection Tweaks", low_kernel, 10, nothing)
+    cv.createTrackbar("low_sigma", "Detection Tweaks", low_sigma, 50, nothing)
+    cv.createTrackbar("high_kernel", "Detection Tweaks", high_kernel, 10, nothing)
+    cv.createTrackbar("high_sigma", "Detection Tweaks", high_sigma, 70, nothing)
+
+
 if __name__ == "__main__":
+    trackbar()
     address = (
         "/home/zakaria/Documents/Projects/AtworkTasks/dataset/video/color/video.avi"
     )
@@ -45,18 +68,27 @@ if __name__ == "__main__":
     success, frame = cap.read()
 
     while success:
-        foreground_mask = dog(
-            frame, low_kernel=3, low_sigma=0, high_kernel=5, high_sigma=0
-        )
+        low_kernel = cv.getTrackbarPos("low_kernel", "Detection Tweaks")
+        low_kernel = low_kernel if low_kernel % 2 == 1 else low_kernel - 1
+
+        low_sigma = cv.getTrackbarPos("low_sigma", "Detection Tweaks")
+
+        high_kernel = cv.getTrackbarPos("high_kernel", "Detection Tweaks")
+        high_kernel = high_kernel if high_kernel % 2 == 1 else high_kernel - 1
+
+        high_sigma = cv.getTrackbarPos("high_sigma", "Detection Tweaks")
+
+        foreground_mask = dog(frame, low_kernel, low_sigma, high_kernel, high_sigma)
         cv.imshow("foreground_mask", foreground_mask)
 
-        # blured_frame = cv.GaussianBlur(foreground_mask, (11, 11), 3)
-
-        diameter, sigmaColor, sigmaSpace = params[1]
-        blured_frame = cv.bilateralFilter(
-            foreground_mask, diameter, sigmaColor, sigmaSpace
-        )
-
+        blur_mode = cv.getTrackbarPos("Blur Modes", "Detection Tweaks")
+        if blur_mode == 0:
+            diameter, sigmaColor, sigmaSpace = params[1]
+            blured_frame = cv.bilateralFilter(
+                foreground_mask, diameter, sigmaColor, sigmaSpace
+            )
+        elif blur_mode == 1:
+            blured_frame = cv.GaussianBlur(foreground_mask, (9, 9), 3)
         cv.imshow("blured_frame", blured_frame)
 
         # Process frame
