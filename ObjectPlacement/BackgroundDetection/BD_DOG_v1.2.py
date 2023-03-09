@@ -38,37 +38,43 @@ if __name__ == "__main__":
     )
     kernel_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
     kernel_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    params = [(11, 21, 7), (11, 41, 21), (11, 61, 39)]
 
     # read frame
     cap = cv.VideoCapture(address)
     success, frame = cap.read()
 
     while success:
-        # Process frame
-        processed_frame = cv.morphologyEx(
-            frame, cv.MORPH_OPEN, kernel_RECT, iterations=1
-        )
-        cv.imshow("processed_frame", processed_frame)
-
-        blured_frame = cv.GaussianBlur(processed_frame, (11, 11), 3)
-        # cv.imshow("blured_frame", blured_frame)
-
         foreground_mask = dog(
-            blured_frame, low_kernel=3, low_sigma=0, high_kernel=5, high_sigma=0
+            frame, low_kernel=3, low_sigma=0, high_kernel=5, high_sigma=0
         )
         cv.imshow("foreground_mask", foreground_mask)
 
-        contours, hierarchy = cv.findContours(
-            foreground_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+        # Process frame
+        processed_foreground_mask = cv.morphologyEx(
+            foreground_mask, cv.MORPH_OPEN, kernel_RECT, iterations=1
+        )
+        cv.imshow("processed_foreground_mask", processed_foreground_mask)
+
+        # blured_frame = cv.GaussianBlur(foreground_mask, (11, 11), 3)
+
+        diameter, sigmaColor, sigmaSpace = params[1]
+        blured_frame = cv.bilateralFilter(
+            processed_foreground_mask, diameter, sigmaColor, sigmaSpace
         )
 
-        draw_rect_for_contours(
-            frame,
-            contours,
-            hierarchy,
-        )
+        cv.imshow("blured_frame", blured_frame)
 
-        cv.imshow("frame", frame)
+        # contours, hierarchy = cv.findContours(
+        #    foreground_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+        # )
+
+        # draw_rect_for_contours(
+        #    frame,
+        #    contours,
+        #    hierarchy,
+        # )
+
         success, frame = cap.read()
         key = cv.waitKey()
         if key == ord("q"):

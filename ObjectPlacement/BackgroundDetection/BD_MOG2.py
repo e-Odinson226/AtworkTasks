@@ -1,21 +1,36 @@
-import cv2
+import cv2 as cv
 
-# frame = cv2.imread("../test_images/Axis_4.jpg")
-
-cap = cv2.VideoCapture("color_Bearing.avi")
-fgbg = cv2.createBackgroundSubtractorMOG2()
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-
-while True:
-    ret, frame = cap.read()
-    fgmask = fgbg.apply(frame)
-
-    foreground_mask_processed = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
-
-    cv2.imshow("frame", foreground_mask_processed)
-
-    if cv2.waitKey(30) & 0xFF == 27:
-        break
+# frame = cv.imread("../test_images/Axis_4.jpg")
 
 
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    address = (
+        "/home/zakaria/Documents/Projects/AtworkTasks/dataset/video/color/video.avi"
+    )
+
+    cap = cv.VideoCapture(address)
+    fgbg = cv.createBackgroundSubtractorMOG2()
+    fgbg.setDetectShadows(False)
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+
+    success, frame = cap.read()
+
+    while success:
+        fgmask = fgbg.apply(frame)
+
+        cv.imshow("frame", fgmask)
+
+        foreground_mask_processed = cv.morphologyEx(
+            fgmask, cv.MORPH_OPEN, kernel, iterations=1
+        )
+        cv.imshow("foreground_mask_processed", foreground_mask_processed)
+
+        success, frame = cap.read()
+
+        key = cv.waitKey()
+        if key == ord("q"):
+            break
+        elif key == ord("p"):
+            cv.waitKey(-1)
+
+cv.destroyAllWindows()
