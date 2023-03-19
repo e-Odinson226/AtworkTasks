@@ -52,7 +52,6 @@ def process(frame):
 
     return out_frame
 
-
 def auto_canny(frame, sigma=0.33):
     
     gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -145,18 +144,23 @@ try:
         rgb_frame = np.asanyarray(rgb_frame.get_data())
         # ////////////////////////////////////////////////////////////////////////////////
         
-        #processed_frame = process(rgb_frame)
-        processed_frame = auto_canny(rgb_frame)
-        contours, hierarchy = detect_contour(processed_frame)
-        draw_objects(rgb_frame, contours, hierarchy)
+        processed_frame = process(rgb_frame)
+        #contours, hierarchy = detect_contour(processed_frame)
+        cv.imshow("processed_frame", processed_frame)
+        
+                
+        canny_frame = auto_canny(rgb_frame)
+        #canny_contours, canny_hierarchy = detect_contour(canny_frame)
+        cv.imshow("canny_frame", canny_frame)
         # ////////////////////////////////////////////////////////////////////////////////
-
+        
+        #draw_objects(rgb_frame, contours, hierarchy)
 
         end = time.time()
         fps = 1 /(end-begin)
         cv.putText(rgb_frame, f"fps:{int(fps)}", (5, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (20,20,20), 2)
 
-        cv.imshow("RGB Frame", rgb_frame)         
+        #cv.imshow("RGB Frame", rgb_frame)
         
         
         key = cv.waitKey(1)
