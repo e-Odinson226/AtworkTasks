@@ -1,5 +1,6 @@
 .venv
 ImageDataset*
+/dataset/*
 test_images*
 __pycache__
 *.jpg

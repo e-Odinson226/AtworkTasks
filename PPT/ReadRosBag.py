@@ -33,7 +33,7 @@ kernel_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
 def process(frame):
 
     frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    blured_frame = cv.GaussianBlur(frame, (11, 11), 0)
+    blured_frame = cv.GaussianBlur(frame, (13, 13), 10)
     # blur = cv.medianBlur(frame, 7)
 
     ret, threshold_frame = cv.threshold(
@@ -48,7 +48,7 @@ def process(frame):
     # threshold_frame = cv.dilate(threshold_frame, kernel, iterations=1)
     # out_frame = cv.erode(threshold_frame, kernel, iterations=1)
 
-    out_frame = cv.morphologyEx(threshold_frame, cv.MORPH_GRADIENT, kernel_RECT)
+    out_frame = cv.morphologyEx(threshold_frame, cv.MORPH_OPEN, kernel_RECT)
 
     return out_frame
 
@@ -149,9 +149,9 @@ try:
         cv.imshow("processed_frame", processed_frame)
         
                 
-        canny_frame = auto_canny(rgb_frame)
+        #canny_frame = auto_canny(rgb_frame)
         #canny_contours, canny_hierarchy = detect_contour(canny_frame)
-        cv.imshow("canny_frame", canny_frame)
+        #cv.imshow("canny_frame", canny_frame)
         # ////////////////////////////////////////////////////////////////////////////////
         
         #draw_objects(rgb_frame, contours, hierarchy)
