@@ -36,7 +36,7 @@ def nothing(x):
     pass
 
 
-def trackbar(blur_modes={"bilateral": 0, "gaussian": 1}, dog_params=(3, 0, 5, 0)):
+def trackbar(blur_modes={"bilateral": 0, "gaussian": 1}, dog_params=(5, 0, 7, 0)):
     low_kernel, low_sigma, high_kernel, high_sigma = dog_params
     cv.namedWindow("Detection Tweaks")
 
@@ -54,6 +54,24 @@ def trackbar(blur_modes={"bilateral": 0, "gaussian": 1}, dog_params=(3, 0, 5, 0)
     cv.createTrackbar("high_sigma", "Detection Tweaks", high_sigma, 70, nothing)
 
 
+def dial_dial_ero(frame):
+    frame = cv.morphologyEx(frame, cv.MORPH_OPEN, kernel_ELLIPSE, iterations=1)
+
+    # frame = cv.erode(frame, kernel_RECT, iterations=1)
+    # frame = cv.dilate(frame, kernel_RECT, iterations=1)
+
+    return frame
+
+
+def blur(frame, blur_mode):
+    frame = (
+        cv.GaussianBlur(frame, (11, 11), 3)
+        if blur_mode == 1
+        else cv.bilateralFilter(frame, d=15, sigmaColor=75, sigmaSpace=75)
+    )
+    return frame
+
+
 if __name__ == "__main__":
     trackbar()
     address = (
@@ -61,6 +79,7 @@ if __name__ == "__main__":
     )
     kernel_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
     kernel_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    kernel_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
     params = [(11, 21, 7), (11, 41, 21), (11, 61, 39)]
 
     # read frame
@@ -78,24 +97,26 @@ if __name__ == "__main__":
 
         high_sigma = cv.getTrackbarPos("high_sigma", "Detection Tweaks")
 
-        foreground_mask = dog(frame, low_kernel, low_sigma, high_kernel, high_sigma)
-        cv.imshow("foreground_mask", foreground_mask)
-
         blur_mode = cv.getTrackbarPos("Blur Modes", "Detection Tweaks")
-        if blur_mode == 0:
-            diameter, sigmaColor, sigmaSpace = params[1]
-            blured_frame = cv.bilateralFilter(
-                foreground_mask, diameter, sigmaColor, sigmaSpace
-            )
-        elif blur_mode == 1:
-            blured_frame = cv.GaussianBlur(foreground_mask, (9, 9), 3)
+        blured_frame = blur(frame, blur_mode)
         cv.imshow("blured_frame", blured_frame)
 
+        fg_mask = dog(blured_frame, low_kernel, low_sigma, high_kernel, high_sigma)
+        cv.imshow("foreground_mask", fg_mask)
+
         # Process frame
-        processed_foreground_mask = cv.morphologyEx(
-            blured_frame, cv.MORPH_OPEN, kernel_RECT, iterations=1
-        )
-        cv.imshow("processed_foreground_mask", processed_foreground_mask)
+        # open_fg_mask = cv.morphologyEx(
+        #    fg_mask, cv.MORPH_OPEN, kernel_RECT, iterations=1
+        # )
+        # cv.imshow("open_fg_mask", open_fg_mask)
+
+        # close_fg_mask = cv.morphologyEx(
+        #    open_fg_mask, cv.MORPH_CLOSE, kernel_RECT, iterations=1
+        # )
+        # cv.imshow("close_fg_mask", close_fg_mask)
+
+        dde_mask = dial_dial_ero(fg_mask)
+        cv.imshow("dde_mask", dde_mask)
 
         # contours, hierarchy = cv.findContours(
         #    foreground_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
