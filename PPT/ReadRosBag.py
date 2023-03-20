@@ -32,7 +32,7 @@ kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
 kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
 kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
 
-def process(frame,  erode_iter=3, dilate_iter=4, gaussian_kernel_size=13):
+def process(frame,  erode_iter=3, dilate_iter=4, morph_kernel=kernel_MORPH_CROSS, gaussian_kernel_size=13):
 
     frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     blured_frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
@@ -47,8 +47,8 @@ def process(frame,  erode_iter=3, dilate_iter=4, gaussian_kernel_size=13):
     ) """
 
     
-    threshold_frame = cv.erode(threshold_frame, kernel_MORPH_CROSS, iterations=erode_iter)
-    out_frame = cv.dilate(threshold_frame, kernel_MORPH_CROSS, iterations=dilate_iter)
+    threshold_frame = cv.erode(threshold_frame, morph_kernel, iterations=erode_iter)
+    out_frame = cv.dilate(threshold_frame, morph_kernel, iterations=dilate_iter)
 
     #out_frame = cv.morphologyEx(threshold_frame, cv.MORPH_OPEN, kernel_RECT)
 
@@ -72,10 +72,11 @@ def auto_canny(frame, sigma=0.33):
  
 def detect_contour(frame):
     contours, hierarchy = cv.findContours(
-        frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+        #frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
         #frame, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE
+        frame, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE
     )
-    # return (contours, hierarchy)
+    #cv.drawContours(rgb_frame, contours, -1, (0,255,0), 10)
     return (contours, hierarchy)
 
 
@@ -138,25 +139,22 @@ try:
     
     # Streaming loop
     while True:
-        # Get frameset of depth
         frames = pipeline.wait_for_frames()
 
-        # Get RGB frame
+        # /////////////////////////////////  Get RGB frame /////////////////////////////////
         begin = time.time()
         rgb_frame = frames.get_color_frame()
         rgb_frame = np.asanyarray(rgb_frame.get_data())
-        # ////////////////////////////////////////////////////////////////////////////////
         
+        
+        # /////////////////////////////////  Processing frames /////////////////////////////////
         processed_frame = process(rgb_frame)
-        #contours, hierarchy = detect_contour(processed_frame)
-        
-        
-                
         #canny_frame = auto_canny(rgb_frame)
-        #canny_contours, canny_hierarchy = detect_contour(canny_frame)
-        #cv.imshow("canny_frame", canny_frame)
-        # ////////////////////////////////////////////////////////////////////////////////
         
+        
+        # /////////////////////////////////  Find contours and Draw /////////////////////////////////
+        #canny_contours, canny_hierarchy = detect_contour(canny_frame)
+        contours, hierarchy = detect_contour(processed_frame)
         #draw_objects(rgb_frame, contours, hierarchy)
 
         end = time.time()
@@ -165,9 +163,8 @@ try:
         
         cv.putText(processed_frame, f"fps:{int(fps)}", (5, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0,250,0), 2)
         cv.imshow("processed_frame", processed_frame)
+        cv.imshow("RGB Frame", rgb_frame)
 
-        #cv.imshow("RGB Frame", rgb_frame)
-        
         
         key = cv.waitKey(1)
         if key == ord("q"):
