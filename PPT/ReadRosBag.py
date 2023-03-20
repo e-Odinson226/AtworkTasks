@@ -28,12 +28,14 @@ if os.path.splitext(args.input)[1] != ".bag":
     print("Only .bag files are accepted")
     exit()
 
-kernel_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
+kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
 
-def process(frame):
+def process(frame,  erode_iter=3, dilate_iter=4, gaussian_kernel_size=13):
 
     frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    blured_frame = cv.GaussianBlur(frame, (13, 13), 10)
+    blured_frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
     # blur = cv.medianBlur(frame, 7)
 
     ret, threshold_frame = cv.threshold(
@@ -41,14 +43,14 @@ def process(frame):
     )
 
     """ threshold_frame = cv.adaptiveThreshold(
-        blur, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 61, 20
+        blured_frame, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 61, 20
     ) """
 
-    #kernel = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
-    # threshold_frame = cv.dilate(threshold_frame, kernel, iterations=1)
-    # out_frame = cv.erode(threshold_frame, kernel, iterations=1)
+    
+    threshold_frame = cv.erode(threshold_frame, kernel_MORPH_CROSS, iterations=erode_iter)
+    out_frame = cv.dilate(threshold_frame, kernel_MORPH_CROSS, iterations=dilate_iter)
 
-    out_frame = cv.morphologyEx(threshold_frame, cv.MORPH_OPEN, kernel_RECT)
+    #out_frame = cv.morphologyEx(threshold_frame, cv.MORPH_OPEN, kernel_RECT)
 
     return out_frame
 
@@ -67,7 +69,6 @@ def auto_canny(frame, sigma=0.33):
 	
     # return the edged image
     return edged
- 
  
 def detect_contour(frame):
     contours, hierarchy = cv.findContours(
@@ -106,7 +107,6 @@ def draw_objects(frame, contours, hierarchy):
 
     return frame """
 
-kernel = np.ones((5, 5))
 
 try:
     # Create pipeline
@@ -128,11 +128,14 @@ try:
     pipeline.start(config)
 
     # Create opencv window to render image in
-    cv.namedWindow("RGB Frame", cv.WINDOW_AUTOSIZE)
+    #cv.namedWindow("RGB Frame", cv.WINDOW_AUTOSIZE)
     
     # Create colorizer object
     colorizer = rs.colorizer()
 
+    # Create plot to show result in image form
+    
+    
     # Streaming loop
     while True:
         # Get frameset of depth
@@ -146,7 +149,7 @@ try:
         
         processed_frame = process(rgb_frame)
         #contours, hierarchy = detect_contour(processed_frame)
-        cv.imshow("processed_frame", processed_frame)
+        
         
                 
         #canny_frame = auto_canny(rgb_frame)
@@ -158,7 +161,10 @@ try:
 
         end = time.time()
         fps = 1 /(end-begin)
-        cv.putText(rgb_frame, f"fps:{int(fps)}", (5, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (20,20,20), 2)
+        
+        
+        cv.putText(processed_frame, f"fps:{int(fps)}", (5, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0,250,0), 2)
+        cv.imshow("processed_frame", processed_frame)
 
         #cv.imshow("RGB Frame", rgb_frame)
         
