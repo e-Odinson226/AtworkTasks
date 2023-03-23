@@ -116,6 +116,8 @@ if __name__ == "__main__":
     try:
         pipeline = rs.pipeline()
         config = rs.config()
+
+        # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
         config.enable_device_from_file(args.input)
 
         # Get device product line for setting a supporting resolution
@@ -128,20 +130,29 @@ if __name__ == "__main__":
         for s in device.sensors:
             if s.get_info(rs.camera_info.name) == "RGB Camera":
                 found_rgb = True
-                print("Depth camera with Color sensor")
-
+                # print("Depth camera with Color sensor")
                 break
         if not found_rgb:
             print("The demo requires Depth camera with Color sensor")
             exit(0)
 
-        # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-        # rs.config.enable_device_from_file(config, args.input)
-
         # Configure the pipeline to stream the depth stream
         # Change this parameters according to the recorded bag file resolution
-        config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-        config.enable_stream(rs.stream.color, rs.format.rgb8, 30)
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+
+        # Start streaming from file
+        profile = pipeline.start(config)
+
+        # Getting the depth sensor's depth scale (see rs-align example for explanation)
+        depth_sensor = profile.get_device().first_depth_sensor()
+        depth_scale = depth_sensor.get_depth_scale()
+        print("Depth Scale is: ", depth_scale)
+
+        # We will be removing the background of objects more than
+        #  clipping_distance_in_meters meters away
+        clipping_distance_in_meters = 1  # 1 meter
+        clipping_distance = clipping_distance_in_meters / depth_scale
 
         # /////////////////////////////////  Processing configurations /////////////////////////////////
         # ---------- decimation ----------
@@ -161,10 +172,6 @@ if __name__ == "__main__":
         # ---------- disparity ----------
         depth_to_disparity = rs.disparity_transform(True)
         disparity_to_depth = rs.disparity_transform(False)
-
-        # Start streaming from file
-
-        profile = pipeline.start(config)
 
         # /////////////////////////////////  Colorizer configurations /////////////////////////////////
         colorizer = rs.colorizer()
