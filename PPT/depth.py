@@ -159,21 +159,21 @@ try:
     colorizer.set_option(rs.option.min_distance, 0.0)
     colorizer.set_option(rs.option.max_distance, 0.5)
 
+    # /////////////////////////////////  Allignment configurations /////////////////////////////////
+    align = rs.align(rs.stream.color)
     # Streaming loop
     while True:
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
-        aligned_depth_frame = aligned_frames.get_depth_frame()
-        color_frame = aligned_frames.get_color_frame()
 
         # /////////////////////////////////  Get RGB frame /////////////////////////////////
         begin = time.time()
-        color_frame = frames.get_color_frame()
+        color_frame = aligned_frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
         color_colormap_dim = color_image.shape
 
         # /////////////////////////////////  Get RGB frame /////////////////////////////////
-        depth_frame = frames.get_depth_frame()
+        depth_frame = aligned_frames.get_depth_frame()
 
         # Apply filters
         depth_frame = decimation.process(depth_frame)
