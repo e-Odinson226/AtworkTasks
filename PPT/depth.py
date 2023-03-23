@@ -118,12 +118,14 @@ try:
     config = rs.config()
 
     # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    config.enable_device_from_file(config, args.input)
+    # rs.config.enable_device_from_file(config, args.input)
+
+    config.enable_device_from_file(args.input)
 
     # Configure the pipeline to stream the depth stream
     # Change this parameters according to the recorded bag file resolution
     config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, rs.format.bgr8, 30)
+    config.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
     # /////////////////////////////////  Processing configurations /////////////////////////////////
     # ---------- decimation ----------
@@ -160,6 +162,9 @@ try:
     # Streaming loop
     while True:
         frames = pipeline.wait_for_frames()
+        aligned_frames = align.process(frames)
+        aligned_depth_frame = aligned_frames.get_depth_frame()
+        color_frame = aligned_frames.get_color_frame()
 
         # /////////////////////////////////  Get RGB frame /////////////////////////////////
         begin = time.time()
@@ -214,6 +219,7 @@ try:
 
         cv.imshow("RGB Frame", color_image)
         cv.imshow("depth_colormap", depth_image)
+        cv.imshow("images", images)
 
         key = cv.waitKey(1)
         if key == ord("q"):
