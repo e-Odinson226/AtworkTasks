@@ -5,7 +5,6 @@ import cv2 as cv
 import argparse
 import os.path
 import time
-import imutils
 
 
 # Create object for parsing command-line options
@@ -113,66 +112,95 @@ def draw_objects(frame, contours):
     return frame
 
 
-try:
-    pipeline = rs.pipeline()
-    config = rs.config()
+if __name__ == "__main__":
+    try:
+        pipeline = rs.pipeline()
+        config = rs.config()
 
-    # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    # rs.config.enable_device_from_file(config, args.input)
+        # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
+        config.enable_device_from_file(args.input)
 
-    config.enable_device_from_file(args.input)
+        # Get device product line for setting a supporting resolution
+        pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+        pipeline_profile = config.resolve(pipeline_wrapper)
+        device = pipeline_profile.get_device()
+        device_product_line = str(device.get_info(rs.camera_info.product_line))
 
-    # Configure the pipeline to stream the depth stream
-    # Change this parameters according to the recorded bag file resolution
-    config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, rs.format.rgb8, 30)
+        found_rgb = False
+        for s in device.sensors:
+            if s.get_info(rs.camera_info.name) == "RGB Camera":
+                found_rgb = True
+                # print("Depth camera with Color sensor")
+                break
+        if not found_rgb:
+            print("The demo requires Depth camera with Color sensor")
+            exit(0)
 
-    # /////////////////////////////////  Processing configurations /////////////////////////////////
-    # ---------- decimation ----------
-    decimation = rs.decimation_filter()
-    decimation.set_option(rs.option.filter_magnitude, 2)
+        # Configure the pipeline to stream the depth stream
+        # Change this parameters according to the recorded bag file resolution
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
-    # ---------- spatial ----------
-    spatial = rs.spatial_filter()
-    spatial.set_option(rs.option.filter_magnitude, 2)
-    spatial.set_option(rs.option.filter_smooth_alpha, 0.5)
-    spatial.set_option(rs.option.filter_smooth_delta, 20)
-    spatial.set_option(rs.option.holes_fill, 3)
+        # Start streaming from file
+        profile = pipeline.start(config)
 
-    # ---------- hole_filling ----------
-    hole_filling = rs.hole_filling_filter()
+        # Getting the depth sensor's depth scale (see rs-align example for explanation)
+        depth_sensor = profile.get_device().first_depth_sensor()
+        depth_scale = depth_sensor.get_depth_scale()
+        print("Depth Scale is: ", depth_scale)
 
-    # ---------- disparity ----------
-    depth_to_disparity = rs.disparity_transform(True)
-    disparity_to_depth = rs.disparity_transform(False)
+        # We will be removing the background of objects more than
+        #  clipping_distance_in_meters meters away
+        clipping_distance_in_meters = 1  # 1 meter
+        clipping_distance = clipping_distance_in_meters / depth_scale
 
-    # Start streaming from file
-    pipeline.start(config)
+        # /////////////////////////////////  Processing configurations /////////////////////////////////
+        # ---------- decimation ----------
+        decimation = rs.decimation_filter()
+        decimation.set_option(rs.option.filter_magnitude, 2)
 
-    # /////////////////////////////////  Colorizer configurations /////////////////////////////////
-    colorizer = rs.colorizer()
-    colorizer.set_option(
-        rs.option.visual_preset, 0
-    )  # 0=Dynamic, 1=Fixed, 2=Near, 3=Far
-    colorizer.set_option(rs.option.color_scheme, 3)
-    colorizer.set_option(rs.option.histogram_equalization_enabled, 0)
-    colorizer.set_option(rs.option.min_distance, 0.0)
-    colorizer.set_option(rs.option.max_distance, 0.5)
+        # ---------- spatial ----------
+        spatial = rs.spatial_filter()
+        spatial.set_option(rs.option.filter_magnitude, 2)
+        spatial.set_option(rs.option.filter_smooth_alpha, 0.5)
+        spatial.set_option(rs.option.filter_smooth_delta, 20)
+        spatial.set_option(rs.option.holes_fill, 3)
 
-    # /////////////////////////////////  Allignment configurations /////////////////////////////////
-    align = rs.align(rs.stream.color)
+        # ---------- hole_filling ----------
+        hole_filling = rs.hole_filling_filter()
+
+        # ---------- disparity ----------
+        depth_to_disparity = rs.disparity_transform(True)
+        disparity_to_depth = rs.disparity_transform(False)
+
+        # /////////////////////////////////  Colorizer configurations /////////////////////////////////
+        colorizer = rs.colorizer()
+        colorizer.set_option(
+            rs.option.visual_preset, 0
+        )  # 0=Dynamic, 1=Fixed, 2=Near, 3=Far
+        colorizer.set_option(rs.option.color_scheme, 3)
+        colorizer.set_option(rs.option.histogram_equalization_enabled, 0)
+        colorizer.set_option(rs.option.min_distance, 0.0)
+        colorizer.set_option(rs.option.max_distance, 0.5)
+
+        # /////////////////////////////////  Allignment configurations /////////////////////////////////
+        align = rs.align(rs.stream.color)
+
+    finally:
+        pass
+
     # Streaming loop
     while True:
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
+        begin = time.time()
 
         # /////////////////////////////////  Get RGB frame /////////////////////////////////
-        begin = time.time()
         color_frame = aligned_frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
         color_colormap_dim = color_image.shape
 
-        # /////////////////////////////////  Get RGB frame /////////////////////////////////
+        # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
         depth_frame = aligned_frames.get_depth_frame()
 
         # Apply filters
@@ -186,16 +214,16 @@ try:
         depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
         depth_colormap_dim = depth_image.shape
 
-        # If depth and color resolutions are different, resize color image to match depth image for display
-        if depth_colormap_dim != color_colormap_dim:
-            resized_color_image = cv.resize(
-                color_image,
-                dsize=(depth_colormap_dim[1], depth_colormap_dim[0]),
-                interpolation=cv.INTER_AREA,
-            )
-            images = np.hstack((resized_color_image, depth_image))
-        else:
-            images = np.hstack((color_image, depth_image))
+        ## If depth and color resolutions are different, resize color image to match depth image for display
+        # if depth_colormap_dim != color_colormap_dim:
+        #    resized_color_image = cv.resize(
+        #        color_image,
+        #        dsize=(depth_colormap_dim[1], depth_colormap_dim[0]),
+        #        interpolation=cv.INTER_AREA,
+        #    )
+        #    images = np.hstack((resized_color_image, depth_image))
+        # else:
+        #    images = np.hstack((color_image, depth_image))
 
         # /////////////////////////////////  Processing frames /////////////////////////////////
         processed_frame = process(color_image)
@@ -203,6 +231,7 @@ try:
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         contours = detect_contour(processed_frame)
         color_frame = draw_objects(color_image, contours)
+        depth_frame = draw_objects(depth_image, contours)
 
         end = time.time()
         fps = 1 / (end - begin)
@@ -217,9 +246,8 @@ try:
             2,
         )
 
-        cv.imshow("RGB Frame", color_image)
-        cv.imshow("depth_colormap", depth_image)
-        cv.imshow("images", images)
+        cv.imshow("RGB Image", color_image)
+        cv.imshow("DEPTH Image", depth_image)
 
         key = cv.waitKey(1)
         if key == ord("q"):
@@ -227,6 +255,3 @@ try:
             break
         if key == ord("p"):
             cv.waitKey(-1)
-
-finally:
-    pass
