@@ -184,7 +184,8 @@ if __name__ == "__main__":
         colorizer.set_option(rs.option.max_distance, 0.5)
 
         # /////////////////////////////////  Allignment configurations /////////////////////////////////
-        align = rs.align(rs.stream.color)
+        align_to = rs.stream.color
+        align = rs.align(align_to)
 
     finally:
         pass
@@ -201,17 +202,20 @@ if __name__ == "__main__":
         color_colormap_dim = color_image.shape
 
         # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
-        depth_frame = aligned_frames.get_depth_frame()
+        aligned_depth_frame = aligned_frames.get_depth_frame()
 
         # Apply filters
-        depth_frame = decimation.process(depth_frame)
-        depth_frame = depth_to_disparity.process(depth_frame)
+        # depth_frame = decimation.process(aligned_depth_frame)
+        depth_frame = depth_to_disparity.process(aligned_depth_frame)
         depth_frame = spatial.process(depth_frame)
         # depth_frame = temporal.process(depth_frame)
         depth_frame = disparity_to_depth.process(depth_frame)
         depth_frame = hole_filling.process(depth_frame)
 
         depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+        aligned_depth_frame = np.asanyarray(
+            colorizer.colorize(aligned_depth_frame).get_data()
+        )
         depth_colormap_dim = depth_image.shape
 
         ## If depth and color resolutions are different, resize color image to match depth image for display
@@ -248,6 +252,7 @@ if __name__ == "__main__":
 
         cv.imshow("RGB Image", color_image)
         cv.imshow("DEPTH Image", depth_image)
+        # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
 
         key = cv.waitKey(1)
         if key == ord("q"):
