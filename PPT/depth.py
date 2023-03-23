@@ -112,6 +112,16 @@ def draw_objects(frame, contours):
     return frame
 
 
+def post_process_depth(depth_frame):
+    # depth_frame = decimation.process(depth_frame)
+    depth_frame = depth_to_disparity.process(depth_frame)
+    depth_frame = spatial.process(depth_frame)
+    # depth_frame = temporal.process(depth_frame)
+    depth_frame = disparity_to_depth.process(depth_frame)
+    depth_frame = hole_filling.process(depth_frame)
+    return depth_frame
+
+
 if __name__ == "__main__":
     try:
         pipeline = rs.pipeline()
@@ -202,32 +212,12 @@ if __name__ == "__main__":
         color_colormap_dim = color_image.shape
 
         # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
-        aligned_depth_frame = aligned_frames.get_depth_frame()
-
-        # Apply filters
-        # depth_frame = decimation.process(aligned_depth_frame)
-        depth_frame = depth_to_disparity.process(aligned_depth_frame)
-        depth_frame = spatial.process(depth_frame)
-        # depth_frame = temporal.process(depth_frame)
-        depth_frame = disparity_to_depth.process(depth_frame)
-        depth_frame = hole_filling.process(depth_frame)
-
+        depth_frame = aligned_frames.get_depth_frame()
+        depth_frame = post_process_depth(
+            depth_frame
+        )  # Apply filters for post-processing
         depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
-        aligned_depth_frame = np.asanyarray(
-            colorizer.colorize(aligned_depth_frame).get_data()
-        )
         depth_colormap_dim = depth_image.shape
-
-        ## If depth and color resolutions are different, resize color image to match depth image for display
-        # if depth_colormap_dim != color_colormap_dim:
-        #    resized_color_image = cv.resize(
-        #        color_image,
-        #        dsize=(depth_colormap_dim[1], depth_colormap_dim[0]),
-        #        interpolation=cv.INTER_AREA,
-        #    )
-        #    images = np.hstack((resized_color_image, depth_image))
-        # else:
-        #    images = np.hstack((color_image, depth_image))
 
         # /////////////////////////////////  Processing frames /////////////////////////////////
         processed_frame = process(color_image)
