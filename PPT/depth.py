@@ -122,6 +122,25 @@ def post_process_depth(depth_frame):
     return depth_frame
 
 
+def filter_contours(depth_frame, contours):
+    for contour in contours:
+        x, y, w, h = cv.boundingRect(contour)
+        values = np.array(cv.mean(depth_frame[y : y + h, x : x + w])).astype(np.uint8)[
+            0
+        ]
+
+        cv.putText(
+            depth_frame,
+            str(values),
+            (x, y),
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            0,
+            3,
+        )
+    return depth_frame
+
+
 if __name__ == "__main__":
     try:
         pipeline = rs.pipeline()
@@ -225,7 +244,10 @@ if __name__ == "__main__":
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         contours = detect_contour(processed_frame)
         color_frame = draw_objects(color_image, contours)
-        depth_frame = draw_objects(depth_image, contours)
+
+        # /////////////////////////////////  Find contours and Draw /////////////////////////////////
+        depth = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
+        depth = filter_contours(depth, contours)
 
         end = time.time()
         fps = 1 / (end - begin)
@@ -241,7 +263,7 @@ if __name__ == "__main__":
         )
 
         cv.imshow("RGB Image", color_image)
-        cv.imshow("DEPTH Image", depth_image)
+        cv.imshow("DEPTH Image", depth)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
 
         key = cv.waitKey(1)
