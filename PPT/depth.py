@@ -81,6 +81,7 @@ def auto_canny(frame, sigma=0.33):
 
 
 def detect_contour(frame):
+    contours_list = []
     contours, hierarchy = cv.findContours(
         frame,
         # cv.RETR_EXTERNAL,
@@ -88,9 +89,12 @@ def detect_contour(frame):
         cv.RETR_TREE,
         cv.CHAIN_APPROX_SIMPLE,
     )
-    cv.drawContours(color_image, contours, -1, (255, 22, 22), 4)
+    for contour in contours:
+        if cv.contourArea(contour) > 200:
+            contours_list.append(contour)
+    # cv.drawContours(color_image, contours, -1, (255, 22, 22), 4)
 
-    return contours
+    return contours_list
 
 
 def draw_objects(frame, contours):
@@ -130,9 +134,9 @@ def filter_contours(depth_frame, contours):
         ]
 
         cv.putText(
-            depth_frame,
+            color_image,
             str(values),
-            (x, y),
+            (int(x + w / 2), int(y + h / 2)),
             cv.FONT_HERSHEY_SIMPLEX,
             1,
             0,
