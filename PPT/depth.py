@@ -104,7 +104,7 @@ def draw_objects(frame, contours):
             x, y, w, h = cv.boundingRect(contour)
             cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
 
-    return frame
+    # return frame
 
 
 def post_process_depth(depth_frame):
@@ -148,8 +148,9 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
             0,
             3,
         )
-        return (demo_frame, depth_value)
-    return (demo_frame, depth_value)
+        return depth_value
+
+    return depth_value
 
 
 def create_mask(frame, contours):
@@ -168,29 +169,29 @@ def create_mask(frame, contours):
 
 def filter_contours(depth_frame, rgb_contours):
     df_copy = depth_frame.copy()
-    # processed_frame = process(depth_frame)
-    # contours_list = detect_contour(processed_frame)
-    # mask = create_mask(depth_frame, contours_list)
+    approved_contours = []
 
-    mean_df = int(np.mean(depth_frame))
+    frame_depth_val = int(np.mean(depth_frame))
 
     for rgb_contour in rgb_contours:
-        df_copy, rgb_cnt_depth_val = contour_depth_value(
+        rgb_cnt_depth_val = contour_depth_value(
             depth_frame, rgb_contour, demo_frame=df_copy
         )
-        # print(f"rgb_cnt_depth_val:{rgb_cnt_depth_val}")
+        if rgb_cnt_depth_val > frame_depth_val:
+            approved_contours.append(rgb_contour)
 
     cv.putText(
         df_copy,
-        f"avg val frame:{mean_df}",
+        f"avg val frame:{frame_depth_val}",
         (5, 30),
         cv.FONT_HERSHEY_SIMPLEX,
         1,
         (0, 250, 0),
         2,
     )
-    cv.imshow("df copy", df_copy)
-    return depth_frame
+
+    # cv.imshow("df copy", df_copy)
+    return approved_contours
 
 
 if __name__ == "__main__":
@@ -295,17 +296,19 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         contours = detect_contour(processed_frame)
-        color_frame = draw_objects(color_image, contours)
+        draw_objects(color_image, contours)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
-        depth = filter_contours(depth_image, contours)
+        contours = filter_contours(depth_image, contours)
+        color_image2 = color_image.copy()
+        draw_objects(color_image2, contours)
 
         end = time.time()
         fps = 1 / (end - begin)
 
         cv.putText(
-            color_frame,
+            color_image,
             f"fps:{int(fps)}",
             (5, 30),
             cv.FONT_HERSHEY_SIMPLEX,
@@ -314,8 +317,10 @@ if __name__ == "__main__":
             2,
         )
 
-        # cv.imshow("RGB Image", color_image)
-        cv.imshow("DEPTH Image", depth)
+        cv.imshow("RGB Image", color_image)
+        cv.imshow("RGB Image After filter", color_image2)
+
+        # cv.imshow("DEPTH Image", depth_image)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
 
         key = cv.waitKey(1)
