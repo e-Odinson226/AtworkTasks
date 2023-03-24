@@ -137,6 +137,7 @@ def create_mask(frame, contours):
 
 
 def filter_contours(depth_frame, contours):
+    df_copy = depth_frame.copy()
     # processed_frame = process(depth_frame)
     # contours_list = detect_contour(processed_frame)
     # mask = create_mask(depth_frame, contours_list)
@@ -157,19 +158,17 @@ def filter_contours(depth_frame, contours):
         #    (0, 200, 0),
         #    4,
         # )
-
-        contour_mean_value = cv.mean(
+        contour_mean_value = int(
             depth_frame[
                 scaled_y : scaled_y + scaled_h,
                 scaled_x : scaled_x + scaled_w,
-            ]
-        )[
-            0
-        ]  # .astype(np.uint8)
-        print(f"contour_mean_value:{contour_mean_value}")
+            ].mean()
+        )
+
+        # print(f"contour_mean_value:{contour_mean_value}")
         # if contour_mean_value>
         cv.putText(
-            depth_frame,
+            df_copy,
             str(contour_mean_value),
             (int(x + w / 2), int(y + h / 2)),
             cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
@@ -177,7 +176,16 @@ def filter_contours(depth_frame, contours):
             0,
             3,
         )
-    print(f"mean depth frame:{mean_df}")
+    cv.putText(
+        df_copy,
+        f"avg val frame:{mean_df}",
+        (5, 30),
+        cv.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 250, 0),
+        2,
+    )
+    cv.imshow("df copy", df_copy)
     return depth_frame
 
 
