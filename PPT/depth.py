@@ -117,9 +117,39 @@ def post_process_depth(depth_frame):
     return depth_frame
 
 
-def mask_contours(frame, contours):
-    cv.drawContours(frame, contours, -1, (255), 1)
-    return frame
+def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
+    x, y, w, h = cv.boundingRect(contour)
+    scaled_x = int(x + scale * w)
+    scaled_y = int(y + scale * h)
+    scaled_w = int((1 - scale) * w)
+    scaled_h = int((1 - scale) * h)
+
+    depth_value = int(
+        depth_frame[
+            scaled_y : scaled_y + scaled_h,
+            scaled_x : scaled_x + scaled_w,
+        ].mean()
+    )
+    if demo_frame is not None:
+        cv.rectangle(
+            demo_frame,
+            (scaled_x, scaled_y),
+            (scaled_x + scaled_w, scaled_y + scaled_h),
+            (0, 200, 0),
+            4,
+        )
+
+        cv.putText(
+            demo_frame,
+            str(depth_value),
+            (int(x + w / 2), int(y + h / 2)),
+            cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
+            1,
+            0,
+            3,
+        )
+        return (demo_frame, depth_value)
+    return (demo_frame, depth_value)
 
 
 def create_mask(frame, contours):
@@ -136,46 +166,20 @@ def create_mask(frame, contours):
     return mask
 
 
-def filter_contours(depth_frame, contours):
+def filter_contours(depth_frame, rgb_contours):
     df_copy = depth_frame.copy()
     # processed_frame = process(depth_frame)
     # contours_list = detect_contour(processed_frame)
     # mask = create_mask(depth_frame, contours_list)
 
     mean_df = int(np.mean(depth_frame))
-    scale = 0.3
-    for contour in contours:
-        x, y, w, h = cv.boundingRect(contour)
-        scaled_x = int(x + scale * w)
-        scaled_y = int(y + scale * h)
-        scaled_w = int((1 - scale) * w)
-        scaled_h = int((1 - scale) * h)
 
-        # cv.rectangle(
-        #    depth_frame,
-        #    (scaled_x, scaled_y),
-        #    (scaled_x + scaled_w, scaled_y + scaled_h),
-        #    (0, 200, 0),
-        #    4,
-        # )
-        contour_mean_value = int(
-            depth_frame[
-                scaled_y : scaled_y + scaled_h,
-                scaled_x : scaled_x + scaled_w,
-            ].mean()
+    for rgb_contour in rgb_contours:
+        df_copy, rgb_cnt_depth_val = contour_depth_value(
+            depth_frame, rgb_contour, demo_frame=df_copy
         )
+        # print(f"rgb_cnt_depth_val:{rgb_cnt_depth_val}")
 
-        # print(f"contour_mean_value:{contour_mean_value}")
-        # if contour_mean_value>
-        cv.putText(
-            df_copy,
-            str(contour_mean_value),
-            (int(x + w / 2), int(y + h / 2)),
-            cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
-            1,
-            0,
-            3,
-        )
     cv.putText(
         df_copy,
         f"avg val frame:{mean_df}",
