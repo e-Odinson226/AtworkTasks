@@ -83,10 +83,13 @@ def detect_contour(frame):
         cv.RETR_TREE,
         cv.CHAIN_APPROX_SIMPLE,
     )
+    scale = 0.85
     for contour in contours:
-        if cv.contourArea(contour) > 200:
+        area = cv.contourArea(contour)
+        if area > 200 and area < (scale * (frame.shape[0] * frame.shape[1])):
             contours_list.append(contour)
-    # cv.drawContours(color_image, contours, -1, (255, 22, 22), 4)
+            # print(f"frame.shape[0] * frame.shape[1]:{frame.shape[0] * frame.shape[1]}, cnt area:{area}")
+    # cv.drawContours(frame, contours_list, -1, (2, 0, 22), 4)
 
     return contours_list
 
@@ -119,27 +122,61 @@ def mask_contours(frame, contours):
     return frame
 
 
-def filter_contours(depth_frame, contours):
-    processed_frame = process(depth_frame)
-    contours_list = detect_contour(processed_frame)
+def create_mask(frame, contours):
+    mask = np.ones(frame.shape[:2], dtype="uint8") * 255
 
     for contour in contours:
-        cv.drawContours(depth_frame, [contour], -1, 0, thickness=cv.FILLED)
-        x, y, w, h = cv.boundingRect(contour)
-        values = np.array(cv.mean(depth_frame[y : y + h, x : x + w])).astype(np.uint8)[
-            0
-        ]
+        peri = cv.arcLength(contour, True)
+        approx = cv.approxPolyDP(contour, 0.04 * peri, True)
 
+        if len(approx) < 10:
+            x, y, w, h = cv.boundingRect(contour)
+            cv.rectangle(mask, (x, y), (x + w, y + h), (0), cv.FILLED)
+
+    return mask
+
+
+def filter_contours(depth_frame, contours):
+    # processed_frame = process(depth_frame)
+    # contours_list = detect_contour(processed_frame)
+    # mask = create_mask(depth_frame, contours_list)
+
+    mean_df = int(np.mean(depth_frame))
+    scale = 0.3
+    for contour in contours:
+        x, y, w, h = cv.boundingRect(contour)
+        scaled_x = int(x + scale * w)
+        scaled_y = int(y + scale * h)
+        scaled_w = int((1 - scale) * w)
+        scaled_h = int((1 - scale) * h)
+
+        # cv.rectangle(
+        #    depth_frame,
+        #    (scaled_x, scaled_y),
+        #    (scaled_x + scaled_w, scaled_y + scaled_h),
+        #    (0, 200, 0),
+        #    4,
+        # )
+
+        contour_mean_value = cv.mean(
+            depth_frame[
+                scaled_y : scaled_y + scaled_h,
+                scaled_x : scaled_x + scaled_w,
+            ]
+        )[
+            0
+        ]  # .astype(np.uint8)
+        print(f"contour_mean_value:{contour_mean_value}")
+        # if contour_mean_value>
         cv.putText(
             depth_frame,
-            str(values),
+            str(contour_mean_value),
             (int(x + w / 2), int(y + h / 2)),
             cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
             1,
             0,
             3,
         )
-    mean_df = np.mean(depth_frame)
     print(f"mean depth frame:{mean_df}")
     return depth_frame
 
@@ -249,8 +286,8 @@ if __name__ == "__main__":
         color_frame = draw_objects(color_image, contours)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        depth = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
-        depth = filter_contours(depth, contours)
+        depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
+        depth = filter_contours(depth_image, contours)
 
         end = time.time()
         fps = 1 / (end - begin)
@@ -265,7 +302,7 @@ if __name__ == "__main__":
             2,
         )
 
-        cv.imshow("RGB Image", color_image)
+        # cv.imshow("RGB Image", color_image)
         cv.imshow("DEPTH Image", depth)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
 
