@@ -103,16 +103,10 @@ def draw_objects(frame, contours):
         peri = cv.arcLength(contour, True)
         approx = cv.approxPolyDP(contour, 0.04 * peri, True)
 
-        if len(approx) < 8 and cv.contourArea(contour) > 250:
-            M = cv.moments(contour)
-            x_center = int((M["m10"] / M["m00"]))
-            y_center = int((M["m01"] / M["m00"]))
-
-            # cv.drawContours(frame, [contour], 0, (0, 0, 0), 6)
+        if len(approx) < 8:
             x, y, w, h = cv.boundingRect(contour)
             cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
 
-        # {"x_center": x_center, "y_center": y_center}
     return frame
 
 
@@ -137,7 +131,7 @@ def filter_contours(depth_frame, contours):
             color_image,
             str(values),
             (int(x + w / 2), int(y + h / 2)),
-            cv.FONT_HERSHEY_SIMPLEX,
+            cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
             1,
             0,
             3,
@@ -267,7 +261,7 @@ if __name__ == "__main__":
         )
 
         cv.imshow("RGB Image", color_image)
-        cv.imshow("DEPTH Image", depth)
+        # cv.imshow("DEPTH Image", depth)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
 
         key = cv.waitKey(1)
