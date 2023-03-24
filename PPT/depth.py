@@ -42,24 +42,18 @@ def process(
     morph_kernel=kernel_MORPH_CROSS,
     gaussian_kernel_size=13,
 ):
-    frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    if len(frame.shape) == 3:
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     blured_frame = cv.GaussianBlur(
         frame, (gaussian_kernel_size, gaussian_kernel_size), 0
     )
-    # blur = cv.medianBlur(frame, 7)
 
     ret, threshold_frame = cv.threshold(
         blured_frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
     )
 
-    """ threshold_frame = cv.adaptiveThreshold(
-        blured_frame, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 61, 20
-    ) """
-
     threshold_frame = cv.erode(threshold_frame, morph_kernel, iterations=erode_iter)
     out_frame = cv.dilate(threshold_frame, morph_kernel, iterations=dilate_iter)
-
-    # out_frame = cv.morphologyEx(threshold_frame, cv.MORPH_OPEN, kernel_RECT)
 
     return out_frame
 
@@ -120,15 +114,24 @@ def post_process_depth(depth_frame):
     return depth_frame
 
 
+def mask_contours(frame, contours):
+    cv.drawContours(frame, contours, -1, (255), 1)
+    return frame
+
+
 def filter_contours(depth_frame, contours):
+    processed_frame = process(depth_frame)
+    contours_list = detect_contour(processed_frame)
+
     for contour in contours:
+        cv.drawContours(depth_frame, [contour], -1, 0, thickness=cv.FILLED)
         x, y, w, h = cv.boundingRect(contour)
         values = np.array(cv.mean(depth_frame[y : y + h, x : x + w])).astype(np.uint8)[
             0
         ]
 
         cv.putText(
-            color_image,
+            depth_frame,
             str(values),
             (int(x + w / 2), int(y + h / 2)),
             cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
@@ -136,6 +139,8 @@ def filter_contours(depth_frame, contours):
             0,
             3,
         )
+    mean_df = np.mean(depth_frame)
+    print(f"mean depth frame:{mean_df}")
     return depth_frame
 
 
@@ -261,7 +266,7 @@ if __name__ == "__main__":
         )
 
         cv.imshow("RGB Image", color_image)
-        # cv.imshow("DEPTH Image", depth)
+        cv.imshow("DEPTH Image", depth)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
 
         key = cv.waitKey(1)
