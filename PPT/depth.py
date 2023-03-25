@@ -85,8 +85,14 @@ def detect_contour(frame):
     )
     scale = 0.85
     for contour in contours:
+        peri = cv.arcLength(contour, True)
+        approx = cv.approxPolyDP(contour, 0.04 * peri, True)
         area = cv.contourArea(contour)
-        if area > 200 and area < (scale * (frame.shape[0] * frame.shape[1])):
+        if (
+            area > 200
+            and area < (scale * (frame.shape[0] * frame.shape[1]))
+            and len(approx) < 8
+        ):
             contours_list.append(contour)
             # print(f"frame.shape[0] * frame.shape[1]:{frame.shape[0] * frame.shape[1]}, cnt area:{area}")
     # cv.drawContours(frame, contours_list, -1, (2, 0, 22), 4)
@@ -94,15 +100,12 @@ def detect_contour(frame):
     return contours_list
 
 
-def draw_objects(frame, contours):
+def draw_contours(frame, contours):
     # computes the bounding box for the contour, and draws it on the frame,
+    # cv.drawContours(color_image, contours, -1, (222, 0, 22), 4)
     for contour in contours:
-        peri = cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, 0.04 * peri, True)
-
-        if len(approx) < 8:
-            x, y, w, h = cv.boundingRect(contour)
-            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
+        x, y, w, h = cv.boundingRect(contour)
+        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
 
     # return frame
 
@@ -153,20 +156,6 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
     return depth_value
 
 
-def create_mask(frame, contours):
-    mask = np.ones(frame.shape[:2], dtype="uint8") * 255
-
-    for contour in contours:
-        peri = cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, 0.04 * peri, True)
-
-        if len(approx) < 10:
-            x, y, w, h = cv.boundingRect(contour)
-            cv.rectangle(mask, (x, y), (x + w, y + h), (0), cv.FILLED)
-
-    return mask
-
-
 def filter_contours(depth_frame, rgb_contours):
     df_copy = depth_frame.copy()
     approved_contours = []
@@ -192,6 +181,14 @@ def filter_contours(depth_frame, rgb_contours):
 
     # cv.imshow("df copy", df_copy)
     return approved_contours
+
+
+def create_mask(frame, contours):
+    blured = cv.GaussianBlur(frame, (13, 13), 0)
+    mask = np.ones(blured.shape[:2], dtype="uint8") * 255
+    cv.drawContours(mask, contours, -1, (0), cv.FILLED)
+
+    return mask
 
 
 if __name__ == "__main__":
@@ -296,19 +293,25 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         contours = detect_contour(processed_frame)
-        draw_objects(color_image, contours)
+        # draw_contours(color_image, contours)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
         contours = filter_contours(depth_image, contours)
-        color_image2 = color_image.copy()
-        draw_objects(color_image2, contours)
+
+        # /////////////////////////////////  Find corners /////////////////////////////////
+        mask = create_mask(depth_image, contours)
+        # depth_image = np.float32(depth_image)
+
+        dst = cv.cornerHarris(mask, 2, 3, 0.04)
+        dst = cv.dilate(dst, None)
+        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
         end = time.time()
         fps = 1 / (end - begin)
 
         cv.putText(
-            color_image,
+            mask,
             f"fps:{int(fps)}",
             (5, 30),
             cv.FONT_HERSHEY_SIMPLEX,
@@ -317,8 +320,10 @@ if __name__ == "__main__":
             2,
         )
 
+        # cv.imshow("mask", mask)
         cv.imshow("RGB Image", color_image)
-        cv.imshow("RGB Image After filter", color_image2)
+
+        # cv.imshow("processed_frame", processed_frame)
 
         # cv.imshow("DEPTH Image", depth_image)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
