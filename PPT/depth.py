@@ -45,8 +45,8 @@ def process(
     if len(frame.shape) == 3:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-    # frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
-    frame = cv.bilateralFilter(frame, 9, 75, 75)
+    frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
+    # frame = cv.bilateralFilter(frame, 9, 75, 75)
 
     ret, frame = cv.threshold(
         frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
@@ -95,7 +95,7 @@ def detect_contour(frame):
     scale = 0.85
     for contour in contours:
         peri = cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, 0.004 * peri, True)
+        approx = cv.approxPolyDP(contour, 0.01 * peri, True)
         area = cv.contourArea(contour)
         if (
             area > 200
@@ -199,7 +199,7 @@ def create_mask(frame, contours):
 def process_contours(contours, kernel=kernel_MORPH_RECT):
     frame = np.ones(color_image.shape[:2], dtype="uint8") * 0
     cv.drawContours(frame, contours, -1, (255), 3)
-    frame = cv.bilateralFilter(frame, 9, 75, 75)
+    # frame = cv.bilateralFilter(frame, 9, 75, 75)
     frame = cv.dilate(frame, kernel, iterations=3)
 
     return detect_contour(frame)
@@ -310,21 +310,20 @@ if __name__ == "__main__":
         # cv.imshow("canny", processed_frame_canny)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        color_image2 = color_image.copy()
+        # color_image2 = color_image.copy()
 
         contours = detect_contour(processed_frame)
-        draw_contours(color_image, contours, mode="contour")
 
         contours = process_contours(contours)
-        draw_contours(color_image2, contours, mode="contour")
+        # draw_contours(color_image2, contours, mode="contour")
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        # contours = filter_contours(depth_image, contours)
-        # draw_contours(color_image, contours, mode="contour")
+        contours = filter_contours(depth_image, contours)
+        draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
-        # mask = create_mask(depth_image, contours)
-        # depth_image = np.float32(depth_image)
+        mask = create_mask(depth_image, contours)
+        depth_image = np.float32(depth_image)
 
         # dst = cv.cornerHarris(mask, 2, 3, 0.04)
         # dst = cv.dilate(dst, None)
@@ -345,7 +344,6 @@ if __name__ == "__main__":
 
         # cv.imshow("mask", mask)
         cv.imshow("color_image", color_image)
-        cv.imshow("color_image2", color_image2)
 
         # cv.imshow("DEPTH Image", depth_image)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
