@@ -44,32 +44,41 @@ def process(
 ):
     if len(frame.shape) == 3:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    blured_frame = cv.GaussianBlur(
-        frame, (gaussian_kernel_size, gaussian_kernel_size), 0
+
+    # frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
+    frame = cv.bilateralFilter(frame, 9, 75, 75)
+
+    ret, frame = cv.threshold(
+        frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
     )
 
-    ret, threshold_frame = cv.threshold(
-        blured_frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
-    )
+    frame = cv.erode(frame, morph_kernel, iterations=erode_iter)
+    frame = cv.dilate(frame, morph_kernel, iterations=dilate_iter)
 
-    threshold_frame = cv.erode(threshold_frame, morph_kernel, iterations=erode_iter)
-    out_frame = cv.dilate(threshold_frame, morph_kernel, iterations=dilate_iter)
-
-    return out_frame
+    return frame
 
 
-def auto_canny(frame, sigma=0.33):
-    gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    blurred = cv.GaussianBlur(gray_frame, (11, 11), 0)
+def auto_canny(
+    frame,
+    sigma=0.33,
+    erode_iter=2,
+    dilate_iter=3,
+    morph_kernel=kernel_MORPH_CROSS,
+):
+    frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    # frame = cv.GaussianBlur(frame, (11, 11), 0)
+    frame = cv.bilateralFilter(frame, 9, 75, 75)
 
     # compute the median of the single channel pixel intensities
-    v = np.median(blurred)
+    v = np.median(frame)
 
     # apply automatic Canny edge detection using the computed median
     lower = int(max(0, (1.0 - sigma) * v))
     upper = int(min(255, (1.0 + sigma) * v))
-    edged = cv.Canny(blurred, lower, upper)
+    edged = cv.Canny(frame, lower, upper)
 
+    edged = cv.dilate(edged, morph_kernel, iterations=dilate_iter)
+    edged = cv.erode(edged, morph_kernel, iterations=erode_iter)
     # return the edged image
     return edged
 
@@ -78,36 +87,34 @@ def detect_contour(frame):
     contours_list = []
     contours, hierarchy = cv.findContours(
         frame,
-        # cv.RETR_EXTERNAL,
+        cv.RETR_EXTERNAL,
         # cv.RETR_LIST,
-        cv.RETR_TREE,
+        # cv.RETR_TREE,
         cv.CHAIN_APPROX_SIMPLE,
     )
     scale = 0.85
     for contour in contours:
         peri = cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, 0.04 * peri, True)
+        approx = cv.approxPolyDP(contour, 0.004 * peri, True)
         area = cv.contourArea(contour)
         if (
             area > 200
             and area < (scale * (frame.shape[0] * frame.shape[1]))
-            and len(approx) < 8
+            and len(approx) < 20
         ):
-            contours_list.append(contour)
-            # print(f"frame.shape[0] * frame.shape[1]:{frame.shape[0] * frame.shape[1]}, cnt area:{area}")
-    # cv.drawContours(frame, contours_list, -1, (2, 0, 22), 4)
-
+            contours_list.append(approx)
+    # cv.drawContours(mask, contours, -1, (255), 4)
     return contours_list
 
 
-def draw_contours(frame, contours):
-    # computes the bounding box for the contour, and draws it on the frame,
-    # cv.drawContours(color_image, contours, -1, (222, 0, 22), 4)
-    for contour in contours:
-        x, y, w, h = cv.boundingRect(contour)
-        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
-
-    # return frame
+def draw_contours(frame, contours, mode="bbox"):
+    if mode == "bbox":
+        # computes the bounding box for the contour, and draws it on the frame,
+        for contour in contours:
+            x, y, w, h = cv.boundingRect(contour)
+            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
+    elif mode == "contour":
+        cv.drawContours(frame, contours, -1, (0, 200, 0), 4)
 
 
 def post_process_depth(depth_frame):
@@ -157,27 +164,25 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
 
 
 def filter_contours(depth_frame, rgb_contours):
-    df_copy = depth_frame.copy()
+    # df_copy = depth_frame.copy()
     approved_contours = []
 
     frame_depth_val = int(np.mean(depth_frame))
 
     for rgb_contour in rgb_contours:
-        rgb_cnt_depth_val = contour_depth_value(
-            depth_frame, rgb_contour, demo_frame=df_copy
-        )
+        rgb_cnt_depth_val = contour_depth_value(depth_frame, rgb_contour)
         if rgb_cnt_depth_val > frame_depth_val:
             approved_contours.append(rgb_contour)
 
-    cv.putText(
-        df_copy,
-        f"avg val frame:{frame_depth_val}",
-        (5, 30),
-        cv.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 250, 0),
-        2,
-    )
+    # cv.putText(
+    #    df_copy,
+    #    f"avg val frame:{frame_depth_val}",
+    #    (5, 30),
+    #    cv.FONT_HERSHEY_SIMPLEX,
+    #    1,
+    #    (0, 250, 0),
+    #    2,
+    # )
 
     # cv.imshow("df copy", df_copy)
     return approved_contours
@@ -189,6 +194,15 @@ def create_mask(frame, contours):
     cv.drawContours(mask, contours, -1, (0), cv.FILLED)
 
     return mask
+
+
+def process_contours(contours, kernel=kernel_MORPH_RECT):
+    frame = np.ones(color_image.shape[:2], dtype="uint8") * 0
+    cv.drawContours(frame, contours, -1, (255), 3)
+    frame = cv.bilateralFilter(frame, 9, 75, 75)
+    frame = cv.dilate(frame, kernel, iterations=3)
+
+    return detect_contour(frame)
 
 
 if __name__ == "__main__":
@@ -286,32 +300,41 @@ if __name__ == "__main__":
             depth_frame
         )  # Apply filters for post-processing
         depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+        depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
         depth_colormap_dim = depth_image.shape
 
         # /////////////////////////////////  Processing frames /////////////////////////////////
         processed_frame = process(color_image)
+        # cv.imshow("threshold", processed_frame_threshold)
+        # processed_frame_canny = auto_canny(color_image)
+        # cv.imshow("canny", processed_frame_canny)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
+        color_image2 = color_image.copy()
+
         contours = detect_contour(processed_frame)
-        # draw_contours(color_image, contours)
+        draw_contours(color_image, contours, mode="contour")
+
+        contours = process_contours(contours)
+        draw_contours(color_image2, contours, mode="contour")
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
-        contours = filter_contours(depth_image, contours)
+        # contours = filter_contours(depth_image, contours)
+        # draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
-        mask = create_mask(depth_image, contours)
+        # mask = create_mask(depth_image, contours)
         # depth_image = np.float32(depth_image)
 
-        dst = cv.cornerHarris(mask, 2, 3, 0.04)
-        dst = cv.dilate(dst, None)
-        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+        # dst = cv.cornerHarris(mask, 2, 3, 0.04)
+        # dst = cv.dilate(dst, None)
+        # color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
         end = time.time()
         fps = 1 / (end - begin)
 
         cv.putText(
-            mask,
+            color_image,
             f"fps:{int(fps)}",
             (5, 30),
             cv.FONT_HERSHEY_SIMPLEX,
@@ -321,9 +344,8 @@ if __name__ == "__main__":
         )
 
         # cv.imshow("mask", mask)
-        cv.imshow("RGB Image", color_image)
-
-        # cv.imshow("processed_frame", processed_frame)
+        cv.imshow("color_image", color_image)
+        cv.imshow("color_image2", color_image2)
 
         # cv.imshow("DEPTH Image", depth_image)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
