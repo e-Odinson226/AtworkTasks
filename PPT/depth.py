@@ -198,9 +198,8 @@ def filter_contours(depth_frame, rgb_contours):
     return approved_contours
 
 
-def create_mask(frame, contours):
-    blured = cv.GaussianBlur(frame, (13, 13), 0)
-    mask = np.ones(blured.shape[:2], dtype="uint8") * 255
+def create_mask(frame_shape, contours):
+    mask = np.ones(frame_shape[:2], dtype="uint8") * 255
     cv.drawContours(mask, contours, -1, (0), cv.FILLED)
 
     return mask
@@ -328,12 +327,13 @@ if __name__ == "__main__":
         draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
-        mask = create_mask(depth_image, contours)
+        mask = create_mask(depth_image.shape[:2], contours)
+
         depth_image = np.float32(depth_image)
 
-        # dst = cv.cornerHarris(mask, 2, 3, 0.04)
-        # dst = cv.dilate(dst, None)
-        # color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+        dst = cv.cornerHarris(mask, 2, 3, 0.04)
+        dst = cv.dilate(dst, None)
+        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
         end = time.time()
         fps = 1 / (end - begin)
@@ -352,7 +352,7 @@ if __name__ == "__main__":
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
 
-        cv.imshow("color_image", color_image)
+        # cv.imshow("color_image", color_image)
         # cv.imshow("processed_frame", processed_frame)
 
         key = cv.waitKey(1)
