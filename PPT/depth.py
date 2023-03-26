@@ -39,7 +39,7 @@ def process(
     frame,
     erode_iter=3,
     dilate_iter=4,
-    morph_kernel=kernel_MORPH_ELLIPSE,
+    morph_kernel=kernel_MORPH_RECT,
     gaussian_kernel_size=13,
 ):
     if len(frame.shape) == 3:
@@ -54,6 +54,7 @@ def process(
 
     frame = cv.morphologyEx(frame, cv.MORPH_CLOSE, morph_kernel, iterations=1)
     frame = cv.morphologyEx(frame, cv.MORPH_OPEN, morph_kernel, iterations=2)
+    frame = cv.morphologyEx(frame, cv.MORPH_GRADIENT, morph_kernel, iterations=1)
 
     # apply automatic Canny edge detection using the computed median
     # v = np.median(frame)
@@ -65,7 +66,7 @@ def process(
     return frame
 
 
-def detect_contour(frame, depth_frame, return_option):
+def filter_contour(frame, depth_frame, return_option):
     contours_list = []
     contours, hierarchy = cv.findContours(
         frame,
@@ -104,9 +105,9 @@ def draw_contours(frame, contours, mode="bbox"):
         # computes the bounding box for the contour, and draws it on the frame,
         for contour in contours:
             x, y, w, h = cv.boundingRect(contour)
-            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
+            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 220), 4)
     elif mode == "contour":
-        cv.drawContours(frame, contours, -1, (0, 200, 0), 4)
+        cv.drawContours(frame, contours, -1, (0, 200, 220), 4)
         # frame = cv.dilate(frame, kernel_MORPH_RECT, iterations=2)
 
 
@@ -276,18 +277,18 @@ if __name__ == "__main__":
         processed_frame = process(color_image)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        contours = detect_contour(processed_frame, depth_image, "approx")
+        contours = filter_contour(processed_frame, depth_image, "contour")
 
         draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
-        # mask = create_mask(depth_image.shape[:2], contours)
+        mask = create_mask(depth_image.shape[:2], contours)
 
         # depth_image = np.float32(depth_image)
 
-        # dst = cv.cornerHarris(mask, 3, 3, 0.04)
-        # dst = cv.dilate(dst, None)
-        # color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+        dst = cv.cornerHarris(mask, 10, 3, 0.04)
+        dst = cv.dilate(dst, None)
+        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
         end = time.time()
         fps = 1 / (end - begin)
