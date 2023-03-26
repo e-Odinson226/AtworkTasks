@@ -46,7 +46,7 @@ def process(
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
     # frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
-    frame = cv.bilateralFilter(frame, 13, 35, 35)
+    # frame = cv.bilateralFilter(frame, 13, 35, 35)
 
     ret, frame = cv.threshold(
         frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
@@ -125,6 +125,7 @@ def draw_contours(frame, contours, mode="bbox"):
             cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
     elif mode == "contour":
         cv.drawContours(frame, contours, -1, (0, 200, 0), 4)
+        # frame = cv.dilate(frame, kernel_MORPH_RECT, iterations=2)
 
 
 def post_process_depth(depth_frame):
@@ -199,9 +200,9 @@ def filter_contours(depth_frame, rgb_contours):
 
 
 def create_mask(frame_shape, contours):
-    mask = np.ones(frame_shape[:2], dtype="uint8") * 255
-    cv.drawContours(mask, contours, -1, (0), cv.FILLED)
-
+    mask = np.ones(frame_shape[:2], dtype="uint8") * 0
+    cv.drawContours(mask, contours, -1, (255), cv.FILLED)
+    mask = cv.dilate(mask, kernel_MORPH_RECT, iterations=2)
     return mask
 
 
@@ -210,7 +211,6 @@ def process_contours(contours, kernel=kernel_MORPH_RECT):
     cv.drawContours(frame, contours, -1, (255), 3)
 
     # frame = cv.bilateralFilter(frame, 13, 35, 35)
-    # frame = cv.bilateralFilter(frame, 9, 75, 75)
     frame = cv.dilate(frame, kernel, iterations=1)
     # frame = cv.morphologyEx(frame, cv.MORPH_OPEN, kernel)
 
@@ -329,10 +329,10 @@ if __name__ == "__main__":
         # /////////////////////////////////  Find corners /////////////////////////////////
         mask = create_mask(depth_image.shape[:2], contours)
 
-        depth_image = np.float32(depth_image)
+        # depth_image = np.float32(depth_image)
 
-        dst = cv.cornerHarris(mask, 2, 3, 0.04)
-        dst = cv.dilate(dst, None)
+        dst = cv.cornerHarris(mask, 3, 3, 0.04)
+        # dst = cv.dilate(dst, None)
         color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
         end = time.time()
@@ -348,11 +348,11 @@ if __name__ == "__main__":
             2,
         )
 
-        # cv.imshow("mask", mask)
+        cv.imshow("mask", mask)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
 
-        # cv.imshow("color_image", color_image)
+        cv.imshow("color_image", color_image)
         # cv.imshow("processed_frame", processed_frame)
 
         key = cv.waitKey(1)
