@@ -55,13 +55,13 @@ def process(
     frame = cv.morphologyEx(frame, cv.MORPH_CLOSE, morph_kernel, iterations=1)
     frame = cv.morphologyEx(frame, cv.MORPH_OPEN, morph_kernel, iterations=2)
     frame = cv.morphologyEx(frame, cv.MORPH_GRADIENT, morph_kernel, iterations=1)
+    # frame = cv.dilate(frame, morph_kernel, iterations=1)
 
     # apply automatic Canny edge detection using the computed median
     # v = np.median(frame)
     # lower = int(max(0, (1.0 - 0.33) * v))
     # upper = int(min(255, (1.0 + 0.33) * v))
     # frame = cv.Canny(frame, lower, upper)
-    # frame = cv.dilate(frame, morph_kernel, iterations=1)
 
     return frame
 
@@ -96,7 +96,7 @@ def filter_contour(frame, depth_frame, return_option):
                 elif return_option == "contour":
                     contours_list.append(contour)
 
-    cv.drawContours(frame, contours, -1, (0, 0, 255), 2)
+    # cv.drawContours(color_image, contours, -1, (0, 0, 255), 2)
     return contours_list
 
 
@@ -161,18 +161,8 @@ def create_mask(frame_shape, contours):
     mask = np.ones(frame_shape[:2], dtype="uint8") * 0
     cv.drawContours(mask, contours, -1, (255), cv.FILLED)
     mask = cv.dilate(mask, kernel_MORPH_RECT, iterations=2)
+
     return mask
-
-
-def process_contours(contours, kernel=kernel_MORPH_RECT):
-    frame = np.ones(color_image.shape[:2], dtype="uint8") * 0
-    cv.drawContours(frame, contours, -1, (255), 3)
-
-    # frame = cv.bilateralFilter(frame, 13, 35, 35)
-    frame = cv.dilate(frame, kernel, iterations=1)
-    # frame = cv.morphologyEx(frame, cv.MORPH_OPEN, kernel)
-
-    return detect_contour(frame, "contour")
 
 
 if __name__ == "__main__":
@@ -278,13 +268,10 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         contours = filter_contour(processed_frame, depth_image, "contour")
-
         draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
         mask = create_mask(depth_image.shape[:2], contours)
-
-        # depth_image = np.float32(depth_image)
 
         dst = cv.cornerHarris(mask, 10, 3, 0.04)
         dst = cv.dilate(dst, None)
@@ -303,12 +290,12 @@ if __name__ == "__main__":
             2,
         )
 
-        # cv.imshow("temp", temp)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
 
-        cv.imshow("processed_frame", processed_frame)
+        # cv.imshow("processed_frame", processed_frame)
         cv.imshow("color_image", color_image)
+        cv.imshow("mask", mask)
 
         key = cv.waitKey(1)
         if key == ord("q"):
