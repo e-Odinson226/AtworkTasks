@@ -30,30 +30,35 @@ if os.path.splitext(args.input)[1] != ".bag":
     print("Only .bag files are accepted")
     exit()
 
-kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
-kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
-kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
+kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
+kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
+kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
 
 
 def process(
     frame,
     erode_iter=3,
     dilate_iter=4,
-    morph_kernel=kernel_MORPH_CROSS,
+    morph_kernel=kernel_MORPH_RECT,
     gaussian_kernel_size=13,
 ):
     if len(frame.shape) == 3:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-    frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
-    # frame = cv.bilateralFilter(frame, 9, 75, 75)
+    # frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
+    frame = cv.bilateralFilter(frame, 13, 35, 35)
 
     ret, frame = cv.threshold(
         frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
     )
 
-    frame = cv.erode(frame, morph_kernel, iterations=erode_iter)
-    frame = cv.dilate(frame, morph_kernel, iterations=dilate_iter)
+    frame = cv.morphologyEx(frame, cv.MORPH_CLOSE, morph_kernel, iterations=1)
+    frame = cv.morphologyEx(frame, cv.MORPH_OPEN, morph_kernel, iterations=1)
+    frame = cv.morphologyEx(frame, cv.MORPH_GRADIENT, morph_kernel, iterations=1)
+    # frame = cv.dilate(frame, morph_kernel, iterations=1)
+
+    # frame = cv.bilateralFilter(frame, 13, 35, 35)
+    # frame = cv.dilate(frame, morph_kernel, iterations=dilate_iter)
 
     return frame
 
@@ -83,7 +88,7 @@ def auto_canny(
     return edged
 
 
-def detect_contour(frame):
+def detect_contour(frame, return_option):
     contours_list = []
     contours, hierarchy = cv.findContours(
         frame,
@@ -93,16 +98,21 @@ def detect_contour(frame):
         cv.CHAIN_APPROX_SIMPLE,
     )
     scale = 0.85
+
     for contour in contours:
         peri = cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, 0.01 * peri, True)
+        approx = cv.approxPolyDP(contour, 0.006 * peri, True)
         area = cv.contourArea(contour)
         if (
             area > 200
             and area < (scale * (frame.shape[0] * frame.shape[1]))
             and len(approx) < 20
         ):
-            contours_list.append(approx)
+            if return_option == "approx":
+                contours_list.append(approx)
+            elif return_option == "contour":
+                contours_list.append(contour)
+
     # cv.drawContours(mask, contours, -1, (255), 4)
     return contours_list
 
@@ -199,10 +209,13 @@ def create_mask(frame, contours):
 def process_contours(contours, kernel=kernel_MORPH_RECT):
     frame = np.ones(color_image.shape[:2], dtype="uint8") * 0
     cv.drawContours(frame, contours, -1, (255), 3)
-    # frame = cv.bilateralFilter(frame, 9, 75, 75)
-    frame = cv.dilate(frame, kernel, iterations=3)
 
-    return detect_contour(frame)
+    # frame = cv.bilateralFilter(frame, 13, 35, 35)
+    # frame = cv.bilateralFilter(frame, 9, 75, 75)
+    frame = cv.dilate(frame, kernel, iterations=1)
+    # frame = cv.morphologyEx(frame, cv.MORPH_OPEN, kernel)
+
+    return detect_contour(frame, "contour")
 
 
 if __name__ == "__main__":
@@ -305,19 +318,12 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Processing frames /////////////////////////////////
         processed_frame = process(color_image)
-        # cv.imshow("threshold", processed_frame_threshold)
-        # processed_frame_canny = auto_canny(color_image)
-        # cv.imshow("canny", processed_frame_canny)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        # color_image2 = color_image.copy()
+        contours = detect_contour(processed_frame, "approx")
+        # contours = process_contours(contours)
 
-        contours = detect_contour(processed_frame)
-
-        contours = process_contours(contours)
-        # draw_contours(color_image2, contours, mode="contour")
-
-        # /////////////////////////////////  Find contours and Draw /////////////////////////////////
+        # /////////////////////////////////  Filter contours and Draw /////////////////////////////////
         contours = filter_contours(depth_image, contours)
         draw_contours(color_image, contours, mode="contour")
 
@@ -343,10 +349,11 @@ if __name__ == "__main__":
         )
 
         # cv.imshow("mask", mask)
-        cv.imshow("color_image", color_image)
-
-        # cv.imshow("DEPTH Image", depth_image)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
+        # cv.imshow("DEPTH Image", depth_image)
+
+        cv.imshow("color_image", color_image)
+        # cv.imshow("processed_frame", processed_frame)
 
         key = cv.waitKey(1)
         if key == ord("q"):
