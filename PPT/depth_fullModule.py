@@ -1,340 +1,341 @@
-## License: Apache 2.0. See LICENSE file in root directory.
-## Copyright(c) 2021 Intel Corporation. All Rights Reserved.
-
-#####################################################
-##                   auto calibration              ##
-#####################################################
-
+# First import library
+import pyrealsense2 as rs
+import numpy as np
+import cv2 as cv
 import argparse
-import json
-import sys
+import os.path
 import time
 
-import pyrealsense2 as rs
 
-__desc__ = """
-This script demonstrates usage of Self-Calibration (UCAL) APIs
-"""
+# Create object for parsing command-line options
+parser = argparse.ArgumentParser(
+    description="Read recorded bag file and display depth stream in jet colormap.\
+                                Remember to change the stream fps and format to match the recorded."
+)
 
-# mappings
-occ_speed_map = {
-    "very_fast": 0,
-    "fast": 1,
-    "medium": 2,
-    "slow": 3,
-    "wall": 4,
-}
-tare_accuracy_map = {
-    "very_high": 0,
-    "high": 1,
-    "medium": 2,
-    "low": 3,
-}
-scan_map = {
-    "intrinsic": 0,
-    "extrinsic": 1,
-}
-fl_adjust_map = {"right_only": 0, "both_sides": 1}
+# Add argument which takes path to a bag file as an input
+parser.add_argument("-i", "--input", type=str, help="Path to the bag file")
 
-ctx = rs.context()
+# Parse the command line arguments to an object
+args = parser.parse_args()
+
+# Safety if no parameter have been given
+if not args.input:
+    print("No input paramater have been given.")
+    print("For help type --help")
+    exit()
+# Check if the given file have bag extension
+if os.path.splitext(args.input)[1] != ".bag":
+    print("The given file is not of correct file format.")
+    print("Only .bag files are accepted")
+    exit()
+
+kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
+kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
+kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
 
 
-def main(arguments=None):
-    args = parse_arguments(arguments)
+def process(
+    frame,
+    erode_iter=3,
+    dilate_iter=4,
+    morph_kernel=kernel_MORPH_ELLIPSE,
+    gaussian_kernel_size=13,
+):
+    if len(frame.shape) == 3:
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-    try:
-        device = ctx.query_devices()[0]
-    except IndexError:
-        print("Device is not connected")
-        sys.exit(1)
+    # frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
+    # frame = cv.bilateralFilter(frame, 13, 35, 35)
 
-    # Verify Preconditions:
-    # 1. The script is applicable for D400-series devices only
-    cam_name = (
-        device.get_info(rs.camera_info.name)
-        if device.supports(rs.camera_info.name)
-        else "Unrecognized camera"
+    ret, frame = cv.threshold(
+        frame, 0, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU
     )
-    if device.supports(rs.camera_info.product_line):
-        device_product_line = str(device.get_info(rs.camera_info.product_line))
-        if device_product_line != "D400":
-            print(
-                f"The example is intended for RealSense D400 Depth cameras, and is not",
-                end=" ",
-            )
-            print(f"applicable with {cam_name}")
-            sys.exit(1)
-    # 2. The routine assumes USB3 connection type
-    #    In case of USB2 connection, the streaming profiles should be readjusted
-    if device.supports(rs.camera_info.usb_type_descriptor):
-        usb_type = device.get_info(rs.camera_info.usb_type_descriptor)
-        if not usb_type.startswith("3."):
-            print("The script is designed to run with USB3 connection type.")
-            print(
-                "In order to enable it with USB2.1 mode the fps rates for the Focal Length and Ground Truth calculation stages should be re-adjusted"
-            )
-            sys.exit(1)
 
-    # prepare device
-    depth_sensor = device.first_depth_sensor()
-    depth_sensor.set_option(rs.option.emitter_enabled, 0)
-    if depth_sensor.supports(rs.option.thermal_compensation):
-        depth_sensor.set_option(rs.option.thermal_compensation, 0)
-    if args.exposure == "auto":
-        depth_sensor.set_option(rs.option.enable_auto_exposure, 1)
-    else:
-        depth_sensor.set_option(rs.option.enable_auto_exposure, 0)
-        depth_sensor.set_option(rs.option.exposure, int(args.exposure))
+    frame = cv.morphologyEx(frame, cv.MORPH_CLOSE, morph_kernel, iterations=1)
+    frame = cv.morphologyEx(frame, cv.MORPH_OPEN, morph_kernel, iterations=2)
 
-    print("Starting UCAL...")
-    try:
-        # The recomended sequence of procedures: On-Chip -> Focal Length -> Tare Calibration
-        run_on_chip_calibration(args.onchip_speed, args.onchip_scan)
-        run_focal_length_calibration(
-            (args.target_width, args.target_height), args.focal_adjustment
+    # apply automatic Canny edge detection using the computed median
+    v = np.median(frame)
+    lower = int(max(0, (1.0 - 0.33) * v))
+    upper = int(min(255, (1.0 + 0.33) * v))
+    frame = cv.Canny(frame, lower, upper)
+    frame = cv.dilate(frame, morph_kernel, iterations=1)
+
+    return frame
+
+
+def detect_contour(frame, return_option):
+    contours_list = []
+    contours, hierarchy = cv.findContours(
+        frame,
+        cv.RETR_EXTERNAL,
+        # cv.RETR_LIST,
+        # cv.RETR_TREE,
+        cv.CHAIN_APPROX_SIMPLE,
+    )
+    scale = 0.85
+
+    for contour in contours:
+        peri = cv.arcLength(contour, True)
+        approx = cv.approxPolyDP(contour, 0.006 * peri, True)
+        area = cv.contourArea(contour)
+        if (
+            area > 200
+            and area < (scale * (frame.shape[0] * frame.shape[1]))
+            and len(approx) < 20
+        ):
+            if return_option == "approx":
+                contours_list.append(approx)
+            elif return_option == "contour":
+                contours_list.append(contour)
+
+    # cv.drawContours(mask, contours, -1, (255), 4)
+    return contours_list
+
+
+def draw_contours(frame, contours, mode="bbox"):
+    if mode == "bbox":
+        # computes the bounding box for the contour, and draws it on the frame,
+        for contour in contours:
+            x, y, w, h = cv.boundingRect(contour)
+            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 4)
+    elif mode == "contour":
+        cv.drawContours(frame, contours, -1, (0, 200, 0), 4)
+        # frame = cv.dilate(frame, kernel_MORPH_RECT, iterations=2)
+
+
+def post_process_depth(depth_frame):
+    # depth_frame = decimation.process(depth_frame)
+    depth_frame = depth_to_disparity.process(depth_frame)
+    depth_frame = spatial.process(depth_frame)
+    # depth_frame = temporal.process(depth_frame)
+    depth_frame = disparity_to_depth.process(depth_frame)
+    depth_frame = hole_filling.process(depth_frame)
+    return depth_frame
+
+
+def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
+    x, y, w, h = cv.boundingRect(contour)
+    scaled_x = int(x + scale * w)
+    scaled_y = int(y + scale * h)
+    scaled_w = int((1 - scale) * w)
+    scaled_h = int((1 - scale) * h)
+
+    depth_value = int(
+        depth_frame[
+            scaled_y : scaled_y + scaled_h,
+            scaled_x : scaled_x + scaled_w,
+        ].mean()
+    )
+    if demo_frame is not None:
+        cv.rectangle(
+            demo_frame,
+            (scaled_x, scaled_y),
+            (scaled_x + scaled_w, scaled_y + scaled_h),
+            (0, 200, 0),
+            4,
         )
-        run_tare_calibration(
-            args.tare_accuracy,
-            args.tare_scan,
-            args.tare_gt,
-            (args.target_width, args.target_height),
+
+        cv.putText(
+            demo_frame,
+            str(depth_value),
+            (int(x + w / 2), int(y + h / 2)),
+            cv.FONT_HERSHEY_SCRIPT_SIMPLEX,
+            1,
+            0,
+            3,
         )
-    finally:
-        if depth_sensor.supports(rs.option.thermal_compensation):
-            depth_sensor.set_option(rs.option.thermal_compensation, 1)
-    print("UCAL finished successfully")
+        return depth_value
+
+    return depth_value
 
 
-def progress_callback(progress):
-    print(f"\rProgress  {progress}% ... ", end="\r")
+def filter_contours(depth_frame, rgb_contours):
+    # df_copy = depth_frame.copy()
+    approved_contours = []
+
+    frame_depth_val = int(np.mean(depth_frame))
+
+    for rgb_contour in rgb_contours:
+        rgb_cnt_depth_val = contour_depth_value(depth_frame, rgb_contour)
+        if rgb_cnt_depth_val > frame_depth_val:
+            approved_contours.append(rgb_contour)
+
+    # cv.putText(
+    #    df_copy,
+    #    f"avg val frame:{frame_depth_val}",
+    #    (5, 30),
+    #    cv.FONT_HERSHEY_SIMPLEX,
+    #    1,
+    #    (0, 250, 0),
+    #    2,
+    # )
+
+    # cv.imshow("df copy", df_copy)
+    return approved_contours
 
 
-def run_on_chip_calibration(speed, scan):
-    data = {
-        "calib type": 0,
-        "speed": occ_speed_map[speed],
-        "scan parameter": scan_map[scan],
-        "white_wall_mode": 1 if speed == "wall" else 0,
-    }
-
-    args = json.dumps(data)
-
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
-    pipe = rs.pipeline(ctx)
-    pp = pipe.start(cfg)
-    dev = pp.get_device()
-
-    try:
-        print("Starting On-Chip calibration...")
-        print(f"\tSpeed:\t{speed}")
-        print(f"\tScan:\t{scan}")
-        adev = dev.as_auto_calibrated_device()
-        table, health = adev.run_on_chip_calibration(args, progress_callback, 30000)
-        print("On-Chip calibration finished")
-        print(f"\tHealth: {health}")
-        adev.set_calibration_table(table)
-        adev.write_calibration()
-    finally:
-        pipe.stop()
+def create_mask(frame_shape, contours):
+    mask = np.ones(frame_shape[:2], dtype="uint8") * 0
+    cv.drawContours(mask, contours, -1, (255), cv.FILLED)
+    mask = cv.dilate(mask, kernel_MORPH_RECT, iterations=2)
+    return mask
 
 
-def run_focal_length_calibration(target_size, adjust_side):
-    number_of_images = 25
-    timeout_s = 30
+def process_contours(contours, kernel=kernel_MORPH_RECT):
+    frame = np.ones(color_image.shape[:2], dtype="uint8") * 0
+    cv.drawContours(frame, contours, -1, (255), 3)
 
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.infrared, 1, 1280, 720, rs.format.y8, 30)
-    cfg.enable_stream(rs.stream.infrared, 2, 1280, 720, rs.format.y8, 30)
+    # frame = cv.bilateralFilter(frame, 13, 35, 35)
+    frame = cv.dilate(frame, kernel, iterations=1)
+    # frame = cv.morphologyEx(frame, cv.MORPH_OPEN, kernel)
 
-    lq = rs.frame_queue(capacity=number_of_images, keep_frames=True)
-    rq = rs.frame_queue(capacity=number_of_images, keep_frames=True)
-
-    counter = 0
-    flags = [False, False]
-
-    def cb(frame):
-        nonlocal counter, flags
-        if counter > number_of_images:
-            return
-        for f in frame.as_frameset():
-            p = f.get_profile()
-            if p.stream_index() == 1:
-                lq.enqueue(f)
-                flags[0] = True
-            if p.stream_index() == 2:
-                rq.enqueue(f)
-                flags[1] = True
-            if all(flags):
-                counter += 1
-        flags = [False, False]
-
-    pipe = rs.pipeline(ctx)
-    pp = pipe.start(cfg, cb)
-    dev = pp.get_device()
-
-    try:
-        print("Starting Focal-Length calibration...")
-        print(f"\tTarget Size:\t{target_size}")
-        print(f"\tSide Adjustment:\t{adjust_side}")
-        stime = time.time()
-        while counter < number_of_images:
-            time.sleep(0.5)
-            if timeout_s < (time.time() - stime):
-                raise RuntimeError(
-                    f"Failed to capture {number_of_images} frames in {timeout_s} seconds, got only {counter} frames"
-                )
-
-        adev = dev.as_auto_calibrated_device()
-        table, ratio, angle = adev.run_focal_length_calibration(
-            lq,
-            rq,
-            target_size[0],
-            target_size[1],
-            fl_adjust_map[adjust_side],
-            progress_callback,
-        )
-        print("Focal-Length calibration finished")
-        print(f"\tRatio:\t{ratio}")
-        print(f"\tAngle:\t{angle}")
-        adev.set_calibration_table(table)
-        adev.write_calibration()
-    finally:
-        pipe.stop()
-
-
-def run_tare_calibration(accuracy, scan, gt, target_size):
-    data = {
-        "scan parameter": scan_map[scan],
-        "accuracy": tare_accuracy_map[accuracy],
-    }
-    args = json.dumps(data)
-
-    print("Starting Tare calibration...")
-    if gt == "auto":
-        target_z = calculate_target_z(target_size)
-    else:
-        target_z = float(gt)
-
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
-    pipe = rs.pipeline(ctx)
-    pp = pipe.start(cfg)
-    dev = pp.get_device()
-
-    try:
-        print(f"\tGround Truth:\t{target_z}")
-        print(f"\tAccuracy:\t{accuracy}")
-        print(f"\tScan:\t{scan}")
-        adev = dev.as_auto_calibrated_device()
-        table = adev.run_tare_calibration(target_z, args, progress_callback, 30000)
-        print("Tare calibration finished")
-        adev.set_calibration_table(table)
-        adev.write_calibration()
-
-    finally:
-        pipe.stop()
-
-
-def calculate_target_z(target_size):
-    number_of_images = 50  # The required number of frames is 10+
-    timeout_s = 30
-
-    cfg = rs.config()
-    cfg.enable_stream(rs.stream.infrared, 1, 1280, 720, rs.format.y8, 30)
-
-    q = rs.frame_queue(capacity=number_of_images, keep_frames=True)
-    # Frame queues q2, q3 should be left empty. Provision for future enhancements.
-    q2 = rs.frame_queue(capacity=number_of_images, keep_frames=True)
-    q3 = rs.frame_queue(capacity=number_of_images, keep_frames=True)
-
-    counter = 0
-
-    def cb(frame):
-        nonlocal counter
-        if counter > number_of_images:
-            return
-        for f in frame.as_frameset():
-            q.enqueue(f)
-            counter += 1
-
-    pipe = rs.pipeline(ctx)
-    pp = pipe.start(cfg, cb)
-    dev = pp.get_device()
-
-    try:
-        stime = time.time()
-        while counter < number_of_images:
-            time.sleep(0.5)
-            if timeout_s < (time.time() - stime):
-                raise RuntimeError(
-                    f"Failed to capture {number_of_images} frames in {timeout_s} seconds, got only {counter} frames"
-                )
-
-        adev = dev.as_auto_calibrated_device()
-        print("Calculating distance to target...")
-        print(f"\tTarget Size:\t{target_size}")
-        target_z = adev.calculate_target_z(q, q2, q3, target_size[0], target_size[1])
-        print(f"Calculated distance to target is {target_z}")
-    finally:
-        pipe.stop()
-
-    return target_z
-
-
-def parse_arguments(args):
-    parser = argparse.ArgumentParser(description=__desc__)
-
-    parser.add_argument(
-        "--exposure",
-        default="auto",
-        help="Exposure value or 'auto' to use auto exposure",
-    )
-    parser.add_argument(
-        "--target-width", default=175, type=int, help="The target width"
-    )
-    parser.add_argument(
-        "--target-height", default=100, type=int, help="The target height"
-    )
-
-    parser.add_argument(
-        "--onchip-speed",
-        default="medium",
-        choices=occ_speed_map.keys(),
-        help="On-Chip speed",
-    )
-    parser.add_argument(
-        "--onchip-scan",
-        choices=scan_map.keys(),
-        default="intrinsic",
-        help="On-Chip scan",
-    )
-
-    parser.add_argument(
-        "--focal-adjustment",
-        choices=fl_adjust_map.keys(),
-        default="right_only",
-        help="Focal-Length adjustment",
-    )
-
-    parser.add_argument(
-        "--tare-gt",
-        default="auto",
-        help="Target ground truth, set 'auto' to calculate using target size"
-        "or the distance to target in mm to use a custom value",
-    )
-    parser.add_argument(
-        "--tare-accuracy",
-        choices=tare_accuracy_map.keys(),
-        default="medium",
-        help="Tare accuracy",
-    )
-    parser.add_argument(
-        "--tare-scan", choices=scan_map.keys(), default="intrinsic", help="Tare scan"
-    )
-
-    return parser.parse_args(args)
+    return detect_contour(frame, "contour")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        pipeline = rs.pipeline()
+        config = rs.config()
+
+        # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
+        config.enable_device_from_file(args.input)
+
+        # Get device product line for setting a supporting resolution
+        pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+        pipeline_profile = config.resolve(pipeline_wrapper)
+        device = pipeline_profile.get_device()
+        device_product_line = str(device.get_info(rs.camera_info.product_line))
+
+        found_rgb = False
+        for s in device.sensors:
+            if s.get_info(rs.camera_info.name) == "RGB Camera":
+                found_rgb = True
+                # print("Depth camera with Color sensor")
+                break
+        if not found_rgb:
+            print("The demo requires Depth camera with Color sensor")
+            exit(0)
+
+        # Configure the pipeline to stream the depth stream
+        # Change this parameters according to the recorded bag file resolution
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+
+        # Start streaming from file
+        profile = pipeline.start(config)
+
+        # Getting the depth sensor's depth scale (see rs-align example for explanation)
+        depth_sensor = profile.get_device().first_depth_sensor()
+        depth_scale = depth_sensor.get_depth_scale()
+        print("Depth Scale is: ", depth_scale)
+
+        # We will be removing the background of objects more than
+        #  clipping_distance_in_meters meters away
+        clipping_distance_in_meters = 1  # 1 meter
+        clipping_distance = clipping_distance_in_meters / depth_scale
+
+        # /////////////////////////////////  Processing configurations /////////////////////////////////
+        # ---------- decimation ----------
+        decimation = rs.decimation_filter()
+        decimation.set_option(rs.option.filter_magnitude, 2)
+
+        # ---------- spatial ----------
+        spatial = rs.spatial_filter()
+        spatial.set_option(rs.option.filter_magnitude, 2)
+        spatial.set_option(rs.option.filter_smooth_alpha, 0.5)
+        spatial.set_option(rs.option.filter_smooth_delta, 20)
+        spatial.set_option(rs.option.holes_fill, 3)
+
+        # ---------- hole_filling ----------
+        hole_filling = rs.hole_filling_filter()
+
+        # ---------- disparity ----------
+        depth_to_disparity = rs.disparity_transform(True)
+        disparity_to_depth = rs.disparity_transform(False)
+
+        # /////////////////////////////////  Colorizer configurations /////////////////////////////////
+        colorizer = rs.colorizer()
+        colorizer.set_option(
+            rs.option.visual_preset, 0
+        )  # 0=Dynamic, 1=Fixed, 2=Near, 3=Far
+        colorizer.set_option(rs.option.color_scheme, 3)
+        colorizer.set_option(rs.option.histogram_equalization_enabled, 0)
+        colorizer.set_option(rs.option.min_distance, 0.0)
+        colorizer.set_option(rs.option.max_distance, 0.5)
+
+        # /////////////////////////////////  Allignment configurations /////////////////////////////////
+        align_to = rs.stream.color
+        align = rs.align(align_to)
+
+    finally:
+        pass
+
+    # Streaming loop
+    while True:
+        frames = pipeline.wait_for_frames()
+        aligned_frames = align.process(frames)
+        begin = time.time()
+
+        # /////////////////////////////////  Get RGB frame /////////////////////////////////
+        color_frame = aligned_frames.get_color_frame()
+        color_image = np.asanyarray(color_frame.get_data())
+        color_colormap_dim = color_image.shape
+
+        # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
+        depth_frame = aligned_frames.get_depth_frame()
+        depth_frame = post_process_depth(
+            depth_frame
+        )  # Apply filters for post-processing
+        depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+        depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
+        depth_colormap_dim = depth_image.shape
+
+        # /////////////////////////////////  Processing frames /////////////////////////////////
+        processed_frame = process(color_image)
+
+        # /////////////////////////////////  Find contours and Draw /////////////////////////////////
+        contours = detect_contour(processed_frame, "approx")
+        # temp = auto_canny(processed_frame)
+        # contours = process_contours(contours)
+
+        # /////////////////////////////////  Filter contours and Draw /////////////////////////////////
+        contours = filter_contours(depth_image, contours)
+        draw_contours(color_image, contours, mode="contour")
+
+        # /////////////////////////////////  Find corners /////////////////////////////////
+        mask = create_mask(depth_image.shape[:2], contours)
+
+        # depth_image = np.float32(depth_image)
+
+        dst = cv.cornerHarris(mask, 3, 3, 0.04)
+        # dst = cv.dilate(dst, None)
+        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+
+        end = time.time()
+        fps = 1 / (end - begin)
+
+        cv.putText(
+            color_image,
+            f"fps:{int(fps)}",
+            (5, 30),
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 250, 0),
+            2,
+        )
+
+        # cv.imshow("temp", temp)
+        # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
+        # cv.imshow("DEPTH Image", depth_image)
+
+        # cv.imshow("color_image", color_image)
+        cv.imshow("processed_frame", processed_frame)
+
+        key = cv.waitKey(1)
+        if key == ord("q"):
+            cv.destroyAllWindows()
+            break
+        if key == ord("p"):
+            cv.waitKey(-1)
