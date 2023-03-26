@@ -39,7 +39,7 @@ def process(
     frame,
     erode_iter=3,
     dilate_iter=4,
-    morph_kernel=kernel_MORPH_RECT,
+    morph_kernel=kernel_MORPH_ELLIPSE,
     gaussian_kernel_size=13,
 ):
     if len(frame.shape) == 3:
@@ -53,39 +53,16 @@ def process(
     )
 
     frame = cv.morphologyEx(frame, cv.MORPH_CLOSE, morph_kernel, iterations=1)
-    frame = cv.morphologyEx(frame, cv.MORPH_OPEN, morph_kernel, iterations=1)
-    frame = cv.morphologyEx(frame, cv.MORPH_GRADIENT, morph_kernel, iterations=1)
-    # frame = cv.dilate(frame, morph_kernel, iterations=1)
-
-    # frame = cv.bilateralFilter(frame, 13, 35, 35)
-    # frame = cv.dilate(frame, morph_kernel, iterations=dilate_iter)
-
-    return frame
-
-
-def auto_canny(
-    frame,
-    sigma=0.33,
-    erode_iter=2,
-    dilate_iter=3,
-    morph_kernel=kernel_MORPH_CROSS,
-):
-    frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    # frame = cv.GaussianBlur(frame, (11, 11), 0)
-    frame = cv.bilateralFilter(frame, 9, 75, 75)
-
-    # compute the median of the single channel pixel intensities
-    v = np.median(frame)
+    frame = cv.morphologyEx(frame, cv.MORPH_OPEN, morph_kernel, iterations=2)
 
     # apply automatic Canny edge detection using the computed median
-    lower = int(max(0, (1.0 - sigma) * v))
-    upper = int(min(255, (1.0 + sigma) * v))
-    edged = cv.Canny(frame, lower, upper)
+    v = np.median(frame)
+    lower = int(max(0, (1.0 - 0.33) * v))
+    upper = int(min(255, (1.0 + 0.33) * v))
+    frame = cv.Canny(frame, lower, upper)
+    frame = cv.dilate(frame, morph_kernel, iterations=1)
 
-    edged = cv.dilate(edged, morph_kernel, iterations=dilate_iter)
-    edged = cv.erode(edged, morph_kernel, iterations=erode_iter)
-    # return the edged image
-    return edged
+    return frame
 
 
 def detect_contour(frame, return_option):
@@ -320,6 +297,7 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         contours = detect_contour(processed_frame, "approx")
+        # temp = auto_canny(processed_frame)
         # contours = process_contours(contours)
 
         # /////////////////////////////////  Filter contours and Draw /////////////////////////////////
@@ -348,12 +326,12 @@ if __name__ == "__main__":
             2,
         )
 
-        cv.imshow("mask", mask)
+        # cv.imshow("temp", temp)
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
 
-        cv.imshow("color_image", color_image)
-        # cv.imshow("processed_frame", processed_frame)
+        # cv.imshow("color_image", color_image)
+        cv.imshow("processed_frame", processed_frame)
 
         key = cv.waitKey(1)
         if key == ord("q"):
