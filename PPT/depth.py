@@ -273,7 +273,7 @@ if __name__ == "__main__":
         # /////////////////////////////////  Find corners /////////////////////////////////
         mask = create_mask(depth_image.shape[:2], contours)
 
-        dst = cv.cornerHarris(mask, 10, 3, 0.04)
+        dst = cv.cornerHarris(mask, 10, 23, 0.04)
         dst = cv.dilate(dst, None)
         color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
