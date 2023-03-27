@@ -273,9 +273,20 @@ if __name__ == "__main__":
         # /////////////////////////////////  Find corners /////////////////////////////////
         mask = create_mask(depth_image.shape[:2], contours)
 
-        dst = cv.cornerHarris(mask, 10, 23, 0.04)
-        dst = cv.dilate(dst, None)
-        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+        surf = cv.xfeatures2d.SURF_create(8000)
+        keypoints, descriptor = surf.detectAndCompute(gray, None)
+        cv.drawKeypoints(
+            mask,
+            keypoints,
+            mask,
+            (51, 163, 236),
+            cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+        )
+        # dst = cv.cornerHarris(mask, 10, 23, 0.04)
+        # dst = cv.dilate(dst, None)
+        # color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+
+        depth = depth_image[xmin_depth:xmax_depth, ymin_depth:ymax_depth].astype(float)
 
         end = time.time()
         fps = 1 / (end - begin)
