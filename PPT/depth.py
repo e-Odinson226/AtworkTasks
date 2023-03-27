@@ -267,7 +267,7 @@ if __name__ == "__main__":
         processed_frame = process(color_image)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        contours = filter_contour(processed_frame, depth_image, "contour")
+        contours = filter_contour(processed_frame, depth_image, "approx")
         draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
@@ -292,10 +292,9 @@ if __name__ == "__main__":
 
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
-
         # cv.imshow("processed_frame", processed_frame)
+        # cv.imshow("mask", mask)
         cv.imshow("color_image", color_image)
-        cv.imshow("mask", mask)
 
         key = cv.waitKey(1)
         if key == ord("q"):
