@@ -39,7 +39,7 @@ def process(
     frame,
     erode_iter=3,
     dilate_iter=4,
-    morph_kernel=kernel_MORPH_RECT,
+    morph_kernel=kernel_MORPH_CROSS,
     gaussian_kernel_size=13,
 ):
     if len(frame.shape) == 3:
@@ -84,7 +84,7 @@ def filter_contour(frame, depth_frame, return_option):
         rgb_cnt_depth_val = contour_depth_value(depth_frame, contour)
         if rgb_cnt_depth_val > frame_depth_val:
             peri = cv.arcLength(contour, True)
-            approx = cv.approxPolyDP(contour, 0.01 * peri, True)
+            approx = cv.approxPolyDP(contour, 0.02 * peri, True)
             area = cv.contourArea(contour)
             if (
                 area > 200
@@ -108,7 +108,7 @@ def draw_contours(frame, contours, mode="bbox"):
             cv.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 220), 4)
     elif mode == "contour":
         cv.drawContours(frame, contours, -1, (0, 200, 220), 4)
-        # frame = cv.dilate(frame, kernel_MORPH_RECT, iterations=2)
+        # frame = cv.dilate(frame, kernel_MORPH_CROSS, iterations=2)
 
 
 def post_process_depth(depth_frame):
@@ -160,7 +160,7 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
 def create_mask(frame_shape, contours):
     mask = np.ones(frame_shape[:2], dtype="uint8") * 0
     cv.drawContours(mask, contours, -1, (255), cv.FILLED)
-    mask = cv.dilate(mask, kernel_MORPH_RECT, iterations=2)
+    mask = cv.dilate(mask, kernel_MORPH_CROSS, iterations=2)
 
     return mask
 
@@ -267,20 +267,22 @@ if __name__ == "__main__":
         processed_frame = process(color_image)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        contours = filter_contour(processed_frame, depth_image, "approx")
+        contours = filter_contour(processed_frame, depth_image, "contour")
         draw_contours(color_image, contours, mode="contour")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
         mask = create_mask(depth_image.shape[:2], contours)
 
-        corners = cv.goodFeaturesToTrack(mask,25,0.01,10)
-        corners = np.int0(corners)
-        for i in corners:
-            x,y = i.ravel()
-            cv.circle(color_image,(x,y),3,255,-1)
-        # dst = cv.cornerHarris(mask, 10, 23, 0.04)
-        # dst = cv.dilate(dst, None)
-        # color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
+        #corners = cv.goodFeaturesToTrack(mask,25,0.01,10)
+        #if corners is not None:
+        #    corners = np.int0(corners)
+        #    for i in corners:
+        #        x,y = i.ravel()
+        #        cv.circle(color_image,(x,y),3,255,-1)
+        
+        dst = cv.cornerHarris(mask, 13, 17, 0.04)
+        dst = cv.dilate(dst, None)
+        color_image[dst > 0.002 * dst.max()] = [0, 0, 255]
 
         #depth = depth_image[xmin_depth:xmax_depth, ymin_depth:ymax_depth].astype(float)
 
@@ -299,8 +301,8 @@ if __name__ == "__main__":
 
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
-        # cv.imshow("processed_frame", processed_frame)
-        # cv.imshow("mask", mask)
+        #cv.imshow("processed_frame", processed_frame)
+        cv.imshow("mask", mask)
         cv.imshow("color_image", color_image)
 
         key = cv.waitKey(1)
