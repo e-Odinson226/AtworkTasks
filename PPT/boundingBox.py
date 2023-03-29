@@ -6,7 +6,7 @@ import argparse
 import os.path
 import time
 
-
+""" 
 # Create object for parsing command-line options
 parser = argparse.ArgumentParser(
     description="Read recorded bag file and display depth stream in jet colormap.\
@@ -29,7 +29,7 @@ if os.path.splitext(args.input)[1] != ".bag":
     print("The given file is not of correct file format.")
     print("Only .bag files are accepted")
     exit()
-
+ """
 kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
 kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
 kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
@@ -79,7 +79,7 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
 
     frame_depth_val = int(np.mean(depth_frame))
 
-    half_bbox_dim = bbox_dim//2
+    half_bbox_dim = bbox_dim // 2
     for contour in contours:
         # Check depth information of each contour
         rgb_cnt_depth_val = contour_depth_value(depth_frame, contour)
@@ -95,31 +95,32 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
                 M = cv.moments(contour)
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
-                x, y, w, h = cX-half_bbox_dim, cY-half_bbox_dim, bbox_dim,bbox_dim 
-                #cv.rectangle(draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4)
-                bbox_list.append([(x, y), (x + w, y + h)])
-                #cv.circle(draw_canvas, (cX, cY), 7, (255, 255, 255), -1)
-                #cv.putText(draw_canvas, "center", (cX - 20, cY - 20),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                x, y, w, h = cX - half_bbox_dim, cY - half_bbox_dim, bbox_dim, bbox_dim
+                # cv.rectangle(draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4)
+                if sum(1 for n in [x, y] if n > 0) == 2:
+                    # print(f"[(x, y), (x + w, y + h)]: {[(x, y), (x + w, y + h)]}")
+                    # print(f"condition: {sum(1 for n in [x, y] if n>0)}")
+
+                    bbox_list.append([(x, y), (x + w, y + h)])
+                # cv.circle(draw_canvas, (cX, cY), 7, (255, 255, 255), -1)
+                # cv.putText(draw_canvas, "center", (cX - 20, cY - 20),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     # cv.drawContours(color_image, contours, -1, (0, 0, 255), 2)
-    if len(bbox_list) !=0:
-        return bbox_list
-    else:
-        return None
+    return bbox_list
+    # if len(bbox_list) !=0:
 
 
-
-def draw_bounding_boxes(frame, bounding_boxes, base_dir_address):
+def crop_bounding_boxes(frame, bounding_boxes, base_dir_address, frame_counter):
     # [(x, y), (x + w, y + h)]
     # computes the bounding box for the contour, and draws it on the frame,
     for i, bbox in enumerate(bounding_boxes):
-        #croped_bbox = frame[y:y+h, x:x+w]
-        print(bbox)
-        croped_bbox = frame[bbox[0][1]:bbox[1][1], bbox[0][0]:bbox[1][0]]
-        if croped_bbox is not None :
-            cv.imwrite(f'{base_dir_address}/bboxed_label_{i}.jpg', croped_bbox)
-        
-        
+        # croped_bbox = frame[y:y+h, x:x+w]
+        croped_bbox = frame[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
+        print(f"draw:{bbox} at {base_dir_address}/bboxlabel/{frame_counter}_{i}.jpg")
+        cv.imwrite(f"{base_dir_address}/bboxlabel/{frame_counter}_{i}.jpg", croped_bbox)
+        # if croped_bbox is not None :
+        #    cv.imwrite(f'{base_dir_address}/bboxed_label_{i}.jpg', croped_bbox)
+
 
 def post_process_depth(depth_frame):
     # depth_frame = decimation.process(depth_frame)
@@ -166,7 +167,6 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
 
     return depth_value
 
-
     mask = np.ones(frame_shape[:2], dtype="uint8") * 0
     cv.drawContours(mask, contours, -1, (255), cv.FILLED)
     mask = cv.dilate(mask, kernel_MORPH_CROSS, iterations=2)
@@ -180,7 +180,10 @@ if __name__ == "__main__":
         config = rs.config()
 
         # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-        config.enable_device_from_file(args.input)
+        # config.enable_device_from_file(args.input)
+        config.enable_device_from_file(
+            "/home/erfan/Documents/Projects/AtworkTasks/dataset/PPT/183847/20230315_183847.bag"
+        )
 
         # Get device product line for setting a supporting resolution
         pipeline_wrapper = rs.pipeline_wrapper(pipeline)
@@ -251,8 +254,9 @@ if __name__ == "__main__":
 
     finally:
         pass
-    
+
     cwd = os.getcwd()
+    frame_counter = 1
     # Streaming loop
     while True:
         frames = pipeline.wait_for_frames()
@@ -262,7 +266,6 @@ if __name__ == "__main__":
         # /////////////////////////////////  Get RGB frame /////////////////////////////////
         color_frame = aligned_frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
-        
         color_colormap_dim = color_image.shape
 
         # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
@@ -279,8 +282,8 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         bounding_boxes = extract_bbox(processed_frame, depth_image, 400, color_image)
-        base_dir_address = cwd
-        draw_bounding_boxes(color_image ,bounding_boxes, base_dir_address)
+        crop_bounding_boxes(color_image, bounding_boxes, cwd, frame_counter)
+        frame_counter += 1
 
         # /////////////////////////////////  Find corners /////////////////////////////////
 
@@ -299,7 +302,7 @@ if __name__ == "__main__":
 
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
-        #cv.imshow("processed_frame", processed_frame)
+        # cv.imshow("processed_frame", processed_frame)
         cv.imshow("color_image", color_image)
 
         key = cv.waitKey(1)
