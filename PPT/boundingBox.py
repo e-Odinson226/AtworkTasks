@@ -5,6 +5,8 @@ import cv2 as cv
 import argparse
 import os.path
 import time
+from pathlib import Path
+
 
 """ 
 # Create object for parsing command-line options
@@ -116,8 +118,10 @@ def crop_bounding_boxes(frame, bounding_boxes, base_dir_address, frame_counter):
     for i, bbox in enumerate(bounding_boxes):
         # croped_bbox = frame[y:y+h, x:x+w]
         croped_bbox = frame[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
-        print(f"draw:{bbox} at {base_dir_address}/bboxlabel/{frame_counter}_{i}.jpg")
-        cv.imwrite(f"{base_dir_address}/bboxlabel/{frame_counter}_{i}.jpg", croped_bbox)
+        # print(f"draw:{bbox} at {base_dir_address}{frame_counter}_{i}.jpg")
+        cv.imwrite(
+            os.path.join(base_dir_address, f"{frame_counter}-{i}.jpg"), croped_bbox
+        )
         # if croped_bbox is not None :
         #    cv.imwrite(f'{base_dir_address}/bboxed_label_{i}.jpg', croped_bbox)
 
@@ -255,7 +259,8 @@ if __name__ == "__main__":
     finally:
         pass
 
-    cwd = os.getcwd()
+    BaseDir = os.path.dirname(os.path.abspath(__file__))
+    dataset_storage_path = os.path.join(BaseDir, "ppt_storage")
     frame_counter = 1
     # Streaming loop
     while True:
@@ -282,7 +287,9 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         bounding_boxes = extract_bbox(processed_frame, depth_image, 400, color_image)
-        crop_bounding_boxes(color_image, bounding_boxes, cwd, frame_counter)
+        crop_bounding_boxes(
+            color_image, bounding_boxes, dataset_storage_path, frame_counter
+        )
         frame_counter += 1
 
         # /////////////////////////////////  Find corners /////////////////////////////////
