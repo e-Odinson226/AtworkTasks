@@ -7,7 +7,6 @@ import os.path
 import time
 from pathlib import Path
 
-
 """ 
 # Create object for parsing command-line options
 parser = argparse.ArgumentParser(
@@ -185,9 +184,9 @@ if __name__ == "__main__":
 
         # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
         # config.enable_device_from_file(args.input)
-        config.enable_device_from_file(
-            "/home/erfan/Documents/Projects/AtworkTasks/dataset/PPT/183847/20230315_183847.bag"
-        )
+        # config.enable_device_from_file(
+        #    "/home/erfan/Documents/Projects/AtworkTasks/dataset/PPT/183847/20230315_183847.bag"
+        # )
 
         # Get device product line for setting a supporting resolution
         pipeline_wrapper = rs.pipeline_wrapper(pipeline)
@@ -210,18 +209,20 @@ if __name__ == "__main__":
         config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
         config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
+        pipeline.start(config)
+
         # Start streaming from file
-        profile = pipeline.start(config)
+        # profile = pipeline.start(config)
 
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
-        depth_sensor = profile.get_device().first_depth_sensor()
-        depth_scale = depth_sensor.get_depth_scale()
-        print("Depth Scale is: ", depth_scale)
+        # depth_sensor = profile.get_device().first_depth_sensor()
+        # depth_scale = depth_sensor.get_depth_scale()
+        # print("Depth Scale is: ", depth_scale)
 
         # We will be removing the background of objects more than
         #  clipping_distance_in_meters meters away
-        clipping_distance_in_meters = 1  # 1 meter
-        clipping_distance = clipping_distance_in_meters / depth_scale
+        # clipping_distance_in_meters = 1  # 1 meter
+        # clipping_distance = clipping_distance_in_meters / depth_scale
 
         # /////////////////////////////////  Processing configurations /////////////////////////////////
         # ---------- decimation ----------
