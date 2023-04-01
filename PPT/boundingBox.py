@@ -7,7 +7,7 @@ import os.path
 import time
 from pathlib import Path
 
-""" 
+
 # Create object for parsing command-line options
 parser = argparse.ArgumentParser(
     description="Read recorded bag file and display depth stream in jet colormap.\
@@ -26,11 +26,11 @@ if not args.input:
     print("For help type --help")
     exit()
 # Check if the given file have bag extension
-if os.path.splitext(args.input)[1] != ".bag":
-    print("The given file is not of correct file format.")
-    print("Only .bag files are accepted")
-    exit()
- """
+# if os.path.splitext(args.input)[1] != ".bag":
+#    print("The given file is not of correct file format.")
+#    print("Only .bag files are accepted")
+#    exit()
+
 kernel_MORPH_RECT = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
 kernel_MORPH_CROSS = cv.getStructuringElement(cv.MORPH_CROSS, (5, 5))
 kernel_MORPH_ELLIPSE = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
@@ -97,7 +97,7 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
                 x, y, w, h = cX - half_bbox_dim, cY - half_bbox_dim, bbox_dim, bbox_dim
-                # cv.rectangle(draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4)
+                cv.rectangle(draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4)
                 if sum(1 for n in [x, y] if n > 0) == 2:
                     # print(f"[(x, y), (x + w, y + h)]: {[(x, y), (x + w, y + h)]}")
                     # print(f"condition: {sum(1 for n in [x, y] if n>0)}")
@@ -117,7 +117,7 @@ def crop_bounding_boxes(frame, bounding_boxes, base_dir_address, frame_counter):
     for i, bbox in enumerate(bounding_boxes):
         # croped_bbox = frame[y:y+h, x:x+w]
         croped_bbox = frame[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
-        # print(f"draw:{bbox} at {base_dir_address}{frame_counter}_{i}.jpg")
+        print(f"draw:{bbox} at {base_dir_address}{frame_counter}_{i}.jpg")
         cv.imwrite(
             os.path.join(base_dir_address, f"{frame_counter}-{i}.jpg"), croped_bbox
         )
@@ -183,10 +183,8 @@ if __name__ == "__main__":
         config = rs.config()
 
         # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-        # config.enable_device_from_file(args.input)
-        # config.enable_device_from_file(
-        #    "/home/erfan/Documents/Projects/AtworkTasks/dataset/PPT/183847/20230315_183847.bag"
-        # )
+        if args.input != "cam":
+            config.enable_device_from_file(args.input)
 
         # Get device product line for setting a supporting resolution
         pipeline_wrapper = rs.pipeline_wrapper(pipeline)
