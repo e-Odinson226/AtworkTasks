@@ -43,9 +43,6 @@ def process(
     morph_kernel=kernel_MORPH_CROSS,
     gaussian_kernel_size=13,
 ):
-    if len(frame.shape) == 3:
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-
     frame = cv.GaussianBlur(frame, (gaussian_kernel_size, gaussian_kernel_size), 0)
     # frame = cv.bilateralFilter(frame, 13, 35, 35)
 
@@ -97,7 +94,10 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
                 x, y, w, h = cX - half_bbox_dim, cY - half_bbox_dim, bbox_dim, bbox_dim
-                cv.rectangle(draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4)
+
+                if draw_canvas is not None:
+                    cv.rectangle(draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4)
+
                 if sum(1 for n in [x, y] if n > 0) == 2:
                     # print(f"[(x, y), (x + w, y + h)]: {[(x, y), (x + w, y + h)]}")
                     # print(f"condition: {sum(1 for n in [x, y] if n>0)}")
@@ -106,7 +106,7 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
                 # cv.circle(draw_canvas, (cX, cY), 7, (255, 255, 255), -1)
                 # cv.putText(draw_canvas, "center", (cX - 20, cY - 20),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-    # cv.drawContours(color_image, contours, -1, (0, 0, 255), 2)
+    # cv.drawContours(rgb_image, contours, -1, (0, 0, 255), 2)
     return bbox_list
     # if len(bbox_list) !=0:
 
@@ -263,14 +263,16 @@ if __name__ == "__main__":
     frame_counter = 1
     # Streaming loop
     while True:
+        key = cv.waitKey(1)
+
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
         begin = time.time()
 
         # /////////////////////////////////  Get RGB frame /////////////////////////////////
         color_frame = aligned_frames.get_color_frame()
-        color_image = np.asanyarray(color_frame.get_data())
-        color_colormap_dim = color_image.shape
+        bgr_image = np.asanyarray(color_frame.get_data())
+        grayed_bgr_image = cv.cvtColor(bgr_image, cv.COLOR_BGR2GRAY)
 
         # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
         depth_frame = aligned_frames.get_depth_frame()
@@ -282,14 +284,24 @@ if __name__ == "__main__":
         depth_colormap_dim = depth_image.shape
 
         # /////////////////////////////////  Processing frames /////////////////////////////////
-        processed_frame = process(color_image)
+        processed_frame = process(grayed_bgr_image)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        bounding_boxes = extract_bbox(processed_frame, depth_image, 400, color_image)
-        crop_bounding_boxes(
-            color_image, bounding_boxes, dataset_storage_path, frame_counter
-        )
-        frame_counter += 1
+        # show boundig_boxes
+        bounding_boxes = extract_bbox(processed_frame, depth_image, 400, bgr_image)
+
+        for i, bbox in enumerate(bounding_boxes):
+            # croped_bbox = frame[y:y+h, x:x+w]
+            croped_bbox = grayed_bgr_image[
+                bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]
+            ]
+
+        if key == ord("r"):
+            crop_bounding_boxes(
+                grayed_bgr_image, bounding_boxes, dataset_storage_path, frame_counter
+            )
+
+            frame_counter += 1
 
         # /////////////////////////////////  Find corners /////////////////////////////////
 
@@ -297,7 +309,7 @@ if __name__ == "__main__":
         fps = 1 / (end - begin)
 
         cv.putText(
-            color_image,
+            bgr_image,
             f"fps:{int(fps)}",
             (5, 30),
             cv.FONT_HERSHEY_SIMPLEX,
@@ -309,9 +321,8 @@ if __name__ == "__main__":
         # cv.imshow("Aligned DEPTH Image", aligned_depth_frame)
         # cv.imshow("DEPTH Image", depth_image)
         # cv.imshow("processed_frame", processed_frame)
-        cv.imshow("color_image", color_image)
+        cv.imshow("rgb_image", bgr_image)
 
-        key = cv.waitKey(1)
         if key == ord("q"):
             cv.destroyAllWindows()
             break
