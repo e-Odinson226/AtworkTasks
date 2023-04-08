@@ -126,7 +126,8 @@ def crop_bounding_boxes(frame, bounding_boxes, base_dir_address, frame_counter):
 
 
 def post_process_depth(depth_frame):
-    # depth_frame = decimation.process(depth_frame)
+    # depth_frame =
+    # .process(depth_frame)
     depth_frame = depth_to_disparity.process(depth_frame)
     depth_frame = spatial.process(depth_frame)
     # depth_frame = temporal.process(depth_frame)
