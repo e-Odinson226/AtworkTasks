@@ -1,6 +1,0 @@
-FROM tensorflow/tensorflow
-ADD . /developer
-ADD requirements.txt .
-
-
-LABEL maintainer="erfan.yekezare@gmail.com"
