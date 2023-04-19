@@ -208,7 +208,7 @@ try:
 
     # Configure the pipeline to stream the depth stream
     # Change this parameters according to the recorded bag file resolution
-    config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
     pipeline.start(config)
@@ -264,7 +264,7 @@ finally:
 
 
 # load classification model
-model_path = "classification_model.h5"
+model_path = "18-04-2023_17-47-41_VGG16.h5"
 model = tf.keras.models.load_model(model_path)
 
 # load class names
