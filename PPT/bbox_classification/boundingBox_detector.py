@@ -264,7 +264,8 @@ finally:
 
 
 # load classification model
-model_path = "18-04-2023_17-47-41_VGG16.h5"
+# model_path = "18-04-2023_17-47-41_VGG16.h5"
+model_path = "classification_ٍEfficientNetV2B0.h5"
 model = tf.keras.models.load_model(model_path)
 
 # load class names
@@ -289,8 +290,6 @@ if __name__ == "__main__":
 
     # Streaming loop
     while True:
-        key = cv.waitKey(1)
-
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
         begin = time.time()
@@ -366,17 +365,18 @@ if __name__ == "__main__":
         end = time.time()
         fps = 1 / (end - begin)
 
-        # cv.putText(
-        #    bgr_image,
-        #    f"fps:{int(fps)}",
-        #    (5, 30),
-        #    cv.FONT_HERSHEY_SIMPLEX,
-        #    1,
-        #    (0, 250, 0),
-        #    2,
-        # )
+        cv.putText(
+            bgr_image,
+            f"fps:{int(fps)}",
+            (5, 30),
+            cv.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 250, 0),
+            2,
+        )
 
         cv.imshow("rgb_image", bgr_image)
+        key = cv.waitKey(1)
 
         if key == ord("q"):
             cv.destroyAllWindows()
