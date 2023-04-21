@@ -234,6 +234,22 @@ def config_sr300():
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
 
+# convert_cm2pixle:
+#   TAKES [ dimention(dimention of object in cm:[width, height]) ],
+#           lens( camera lens specifications:[focal_length, pixel_pitch, lens_distance])]
+#   DOES [  1-l1_l2) read dimention values from dimention variable to seperate variables
+#           2-l3_l8) calculate width and height in pixels from this formula:
+#                       pixels = real_distance * lens['focal_length'] / (lens['pixel_pitch'] * lens['lens_distance']) ]
+#   RETURNS [   dict:[width: width on pixels, height: height in pixels]   ]
+def convert_cm2pixle(real_distance, lens):
+    dim = (
+        real_distance
+        * lens["focal_length"]
+        / (lens["pixel_pitch"] * lens["lens_distance"])
+    )
+    return int(dim)
+
+
 try:
     pipeline = rs.pipeline()
     config = rs.config()
@@ -256,8 +272,8 @@ try:
 
     # We will be removing the background of objects more than
     #  clipping_distance_in_meters meters away
-    # clipping_distance_in_meters = 1  # 1 meter
-    # clipping_distance = clipping_distance_in_meters / depth_scale
+    clipping_distance_in_meters = 1  # 1 meter
+    clipping_distance = clipping_distance_in_meters / depth_scale
 
     # /////////////////////////////////  Processing configurations /////////////////////////////////
     # ---------- decimation ----------
@@ -297,8 +313,6 @@ finally:
 
 
 # load classification model
-# model_path = "18-04-2023_17-47-41_VGG16.h5"
-# model_path = "classification_ٍEfficientNetV2B0.h5"
 model_path = args.model
 model = tf.keras.models.load_model(model_path)
 
@@ -316,12 +330,27 @@ labels = {
 
 
 if __name__ == "__main__":
+    #   dimention (dimention of object in cm:[width, height])
+    #   lens (camera lens specifications:[focal_length, pixel_pitch, lens_distance])]
+
+    lens = {"focal_length": 1.88, "pixel_pitch": 0.20, "lens_distance": 0.29}
+    dim = 13.5
+
+    # width = dimention["width"]
+    # height = dimention["height"]
+    # print(f"width:{width}, height:{height}")
+
+    # dimention : {"width": p_width, "height": p_height}
+
     BaseDir = os.path.dirname(os.path.abspath(__file__))
     dataset_storage_path = os.path.join(BaseDir, "ppt_storage")
     frame_counter = 1
 
     # Streaming loop
     while True:
+        dimention = convert_cm2pixle(dim, lens)
+        print(f"dimention:{dimention}")
+
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
         begin = time.time()
@@ -333,6 +362,10 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
         depth_frame = aligned_frames.get_depth_frame()
+
+        # depth_l = np.asanyarray(depth_frame.get_data())
+        # depth_l = depth_l[xmin_depth:xmax_depth,ymin_depth:ymax_depth].astype(float)
+
         depth_frame = post_process_depth(
             depth_frame
         )  # Apply filters for post-processing
@@ -345,7 +378,9 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         # show boundig_boxes
-        bounding_boxes = extract_bbox(processed_frame, depth_image, 400, bgr_image)
+        bounding_boxes = extract_bbox(
+            processed_frame, depth_image, dimention, bgr_image
+        )
         # print(len(bounding_boxes))
         for i, bbox in enumerate(bounding_boxes):
             # croped_bbox = frame[y:y+h, x:x+w]
