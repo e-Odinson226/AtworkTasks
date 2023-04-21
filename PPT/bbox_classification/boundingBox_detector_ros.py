@@ -250,6 +250,11 @@ def convert_cm2pixle(real_distance, lens):
     return int(dim)
 
 
+def check_area(frame):
+    grayed_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    cv.imshow("grayed_frame", grayed_frame)
+
+
 try:
     pipeline = rs.pipeline()
     config = rs.config()
@@ -349,7 +354,7 @@ if __name__ == "__main__":
     # Streaming loop
     while True:
         dimention = convert_cm2pixle(dim, lens)
-        print(f"dimention:{dimention}")
+        # print(f"dimention:{dimention}")
 
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
@@ -389,43 +394,54 @@ if __name__ == "__main__":
             # Classify:
             bbox_resized = cv.resize(croped_bbox, (224, 224))
 
-            # labels = train_generator.class_indices
-
             img_array = tf.keras.utils.img_to_array(bbox_resized)
             img_array = tf.expand_dims(img_array, 0)  # Create a batch
 
             predict = np.argmax(model.predict(img_array, verbose=None))
 
-            # print(f"label_pred:{labels[predict]} pred:{predict}")
-            # print(predict)
-            # print(labels[predict])
-            # print("__________________________--")
+            if labels[predict] == "M20_30_vertical":
+                _, binary_frame = cv.threshold(
+                    cv.cvtColor(croped_bbox, cv.COLOR_BGR2GRAY),
+                    0,
+                    255,
+                    cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU,
+                )
 
-            # score = tf.nn.softmax(labels[predict])
+                print("----------------------")
+                number_of_white_pix = np.sum(binary_frame == 255)
+                number_of_pix = np.sum(binary_frame)
+                print(f"white/all {number_of_white_pix}")
+
+                """ cv.putText(
+                    binary_frame,
+                    f"num_white_pixels:{num_white_pixels}",
+                    (binary_frame[0][0], binary_frame[0][1] + 30),
+                    cv.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 0, 200),
+                    1,
+                ) """
+                # cv.imshow("grayed_frame", binary_frame)
+                # check_area(croped_bbox)
+            elif labels[predict] == "M20_30_horizontal":
+                pass
+            elif labels[predict] == "S40_40_horizontal":
+                pass
+            elif labels[predict] == "F20_20_horizontal":
+                pass
+
+            # score = tf.nn.softmax(predict)
 
             cv.putText(
                 bgr_image,
                 f"{labels[predict]}",
                 # f"{labels[predict]} , {(100 * np.max(score)):.2f}",
-                # f"{str(predict)}",
                 (bbox[0][0], bbox[0][1] + 30),
                 cv.FONT_HERSHEY_SIMPLEX,
                 1,
                 (0, 0, 0),
                 1,
             )
-
-            # print(
-            #    "This image most likely belongs to {} with a {:.2f} percent confidence.".format(
-            #        class_names[np.argmax(score)], 100 * np.max(score)
-            #    )
-            # )
-
-        # if key == ord("r"):
-        #    crop_bounding_boxes(
-        #        grayed_bgr_image, bounding_boxes, dataset_storage_path, frame_counter
-        #    )
-        #    frame_counter += 1
 
         # /////////////////////////////////  Find corners /////////////////////////////////
 
