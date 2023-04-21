@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 import tensorflow as tf
 
+
 # Create object for parsing command-line options
 parser = argparse.ArgumentParser(
     description="Read recorded bag file and display depth stream in jet colormap.\
@@ -15,9 +16,14 @@ parser = argparse.ArgumentParser(
 
 # Add argument which takes path to a bag file as an input
 parser.add_argument("-i", "--input", type=str, help="Path to the bag file")
+parser.add_argument("-m", "--model", type=str, help="Path to the model")
+
 
 # Parse the command line arguments to an object
 args = parser.parse_args()
+print(f"Input: {args.input}")
+print(f"Model: {args.model}")
+
 
 # Safety if no parameter have been given
 if not args.input:
@@ -182,13 +188,8 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
     return mask
 
 
-try:
-    pipeline = rs.pipeline()
-    config = rs.config()
-
-    # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    if args.input != "cam":
-        config.enable_device_from_file(args.input)
+def config_d435(config):
+    pipeline.start(config)
 
     # Get device product line for setting a supporting resolution
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
@@ -208,10 +209,19 @@ try:
 
     # Configure the pipeline to stream the depth stream
     # Change this parameters according to the recorded bag file resolution
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
-    pipeline.start(config)
+
+try:
+    pipeline = rs.pipeline()
+    config = rs.config()
+
+    # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
+    if args.input == "d435":
+        config_d435(config)
+    elif args.input == "sr300":
+        config.enable_device_from_file(args.input)
 
     # Start streaming from file
     # profile = pipeline.start(config)
