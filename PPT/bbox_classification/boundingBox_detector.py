@@ -5,7 +5,7 @@ import argparse
 import os.path
 import time
 from pathlib import Path
-import tensorflow as tf
+
 
 # Create object for parsing command-line options
 parser = argparse.ArgumentParser(
@@ -15,9 +15,14 @@ parser = argparse.ArgumentParser(
 
 # Add argument which takes path to a bag file as an input
 parser.add_argument("-i", "--input", type=str, help="Path to the bag file")
+parser.add_argument("-m", "--model", type=str, help="Path to the model")
+
 
 # Parse the command line arguments to an object
 args = parser.parse_args()
+print(f"Input: {args.input}")
+print(f"Model: {args.model}")
+
 
 # Safety if no parameter have been given
 if not args.input:
@@ -115,18 +120,14 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
     # if len(bbox_list) !=0:
 
 
-def crop_bounding_boxes(frame, bounding_boxes, base_dir_address, frame_counter):
-    # [(x, y), (x + w, y + h)]
-    # computes the bounding box for the contour, and draws it on the frame,
-    for i, bbox in enumerate(bounding_boxes):
-        # croped_bbox = frame[y:y+h, x:x+w]
-        croped_bbox = frame[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
-        print(f"draw:{bbox} at {base_dir_address}{frame_counter}_{i}.jpg")
-        cv.imwrite(
-            os.path.join(base_dir_address, f"{frame_counter}-{i}.jpg"), croped_bbox
-        )
-        # if croped_bbox is not None :
-        #    cv.imwrite(f'{base_dir_address}/bboxed_label_{i}.jpg', croped_bbox)
+def draw_contours(frame, contours, mode="bbox"):
+    if mode == "bbox":
+        # computes the bounding box for the contour, and draws it on the frame,
+        for contour in contours:
+            cv.rectangle(frame, contour[0], contour[1], (0, 200, 220), 4)
+    elif mode == "contour":
+        cv.drawContours(frame, contours, -1, (0, 200, 220), 4)
+        # frame = cv.dilate(frame, kernel_MORPH_CROSS, iterations=2)
 
 
 def post_process_depth(depth_frame):
@@ -182,14 +183,30 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
     return mask
 
 
-try:
-    pipeline = rs.pipeline()
-    config = rs.config()
+def config_d435():
+    # Get device product line for setting a supporting resolution
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+    device_product_line = str(device.get_info(rs.camera_info.product_line))
 
-    # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
-    if args.input != "cam":
-        config.enable_device_from_file(args.input)
+    found_rgb = False
+    for s in device.sensors:
+        if s.get_info(rs.camera_info.name) == "RGB Camera":
+            found_rgb = True
+            # print("Depth camera with Color sensor")
+            break
+    if not found_rgb:
+        print("The demo requires Depth camera with Color sensor")
+        exit(0)
 
+    # Configure the pipeline to stream the depth stream
+    # Change this parameters according to the recorded bag file resolution
+    config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+
+
+def config_sr300():
     # Get device product line for setting a supporting resolution
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
     pipeline_profile = config.resolve(pipeline_wrapper)
@@ -211,20 +228,40 @@ try:
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
-    pipeline.start(config)
 
-    # Start streaming from file
+def convert_cm2pixle(real_distance, lens):
+    dim = (
+        real_distance
+        * lens["focal_length"]
+        / (lens["pixel_pitch"] * lens["lens_distance"])
+    )
+    return int(dim)
+
+
+try:
+    pipeline = rs.pipeline()
+    config = rs.config()
+    profile = pipeline.start(config)
+
+    # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
+    if args.input == "d435":
+        config_d435()
+    elif args.input == "sr300":
+        config_sr300()
+    else:
+        config.enable_device_from_file(args.input)
+
     # profile = pipeline.start(config)
 
     # Getting the depth sensor's depth scale (see rs-align example for explanation)
-    # depth_sensor = profile.get_device().first_depth_sensor()
-    # depth_scale = depth_sensor.get_depth_scale()
-    # print("Depth Scale is: ", depth_scale)
+    depth_sensor = profile.get_device().first_depth_sensor()
+    depth_scale = depth_sensor.get_depth_scale()
+    print("Depth Scale is: ", depth_scale)
 
     # We will be removing the background of objects more than
     #  clipping_distance_in_meters meters away
-    # clipping_distance_in_meters = 1  # 1 meter
-    # clipping_distance = clipping_distance_in_meters / depth_scale
+    clipping_distance_in_meters = 1  # 1 meter
+    clipping_distance = clipping_distance_in_meters / depth_scale
 
     # /////////////////////////////////  Processing configurations /////////////////////////////////
     # ---------- decimation ----------
@@ -263,33 +300,15 @@ finally:
     pass
 
 
-# load classification model
-# model_path = "18-04-2023_17-47-41_VGG16.h5"
-model_path = "classification_ٍEfficientNetV2B0.h5"
-model = tf.keras.models.load_model(model_path)
-
-# load class names
-labels = {
-    0: "F20_20_horizontal",
-    1: "M20_100_horizontal",
-    2: "M20_horizontal",
-    3: "M20_vertical",
-    4: "M30_horizontal",
-    5: "M30_vertical",
-    6: "R20_horizontal",
-    7: "R20_vertical",
-    8: "S40_40_horizontal",
-    9: "S40_40_virtical",
-}
-
-
 if __name__ == "__main__":
-    BaseDir = os.path.dirname(os.path.abspath(__file__))
-    dataset_storage_path = os.path.join(BaseDir, "ppt_storage")
+    lens = {"focal_length": 1.88, "pixel_pitch": 0.18, "lens_distance": 0.29}
+    dim = 13.5
+
     frame_counter = 1
 
     # Streaming loop
     while True:
+        dimention = convert_cm2pixle(dim, lens)
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
         begin = time.time()
@@ -301,9 +320,8 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Get DEPTH frame /////////////////////////////////
         depth_frame = aligned_frames.get_depth_frame()
-        depth_frame = post_process_depth(
-            depth_frame
-        )  # Apply filters for post-processing
+
+        depth_frame = post_process_depth(depth_frame)
         depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
         depth_image = cv.cvtColor(depth_image, cv.COLOR_BGR2GRAY)
         depth_colormap_dim = depth_image.shape
@@ -312,53 +330,11 @@ if __name__ == "__main__":
         processed_frame = process(grayed_bgr_image)
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
-        # show boundig_boxes
-        bounding_boxes = extract_bbox(processed_frame, depth_image, 400, bgr_image)
-        print(len(bounding_boxes))
-        for i, bbox in enumerate(bounding_boxes):
-            # croped_bbox = frame[y:y+h, x:x+w]
-            croped_bbox = bgr_image[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
 
-            # Classify:
-            bbox_resized = cv.resize(croped_bbox, (224, 224))
-
-            # labels = train_generator.class_indices
-
-            img_array = tf.keras.utils.img_to_array(bbox_resized)
-            img_array = tf.expand_dims(img_array, 0)  # Create a batch
-
-            predict = np.argmax(model.predict(img_array))
-
-            # print(f"label_pred:{labels[predict]} pred:{predict}")
-            # print(predict)
-            # print(labels[predict])
-            # print("__________________________--")
-
-            # score = tf.nn.softmax(labels[predict])
-
-            cv.putText(
-                bgr_image,
-                f"{labels[predict]}",
-                # f"{labels[predict]} , {(100 * np.max(score)):.2f}",
-                # f"{str(predict)}",
-                (bbox[0][0], bbox[0][1] + 30),
-                cv.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 0),
-                1,
-            )
-
-            # print(
-            #    "This image most likely belongs to {} with a {:.2f} percent confidence.".format(
-            #        class_names[np.argmax(score)], 100 * np.max(score)
-            #    )
-            # )
-
-        # if key == ord("r"):
-        #    crop_bounding_boxes(
-        #        grayed_bgr_image, bounding_boxes, dataset_storage_path, frame_counter
-        #    )
-        #    frame_counter += 1
+        bounding_boxes = extract_bbox(
+            processed_frame, depth_image, dimention, bgr_image
+        )
+        draw_contours(bgr_image, bounding_boxes, mode="bbox")
 
         # /////////////////////////////////  Find corners /////////////////////////////////
 
@@ -375,7 +351,7 @@ if __name__ == "__main__":
             2,
         )
 
-        cv.imshow("rgb_image", bgr_image)
+        cv.imshow("bgr_image", bgr_image)
         key = cv.waitKey(1)
 
         if key == ord("q"):
