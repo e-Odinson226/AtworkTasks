@@ -275,21 +275,20 @@ finally:
 
 # load classification model
 # model_path = "18-04-2023_17-47-41_VGG16.h5"
-model_path = "classification_ٍEfficientNetV2B0.h5"
+# model_path = "classification_ٍEfficientNetV2B0.h5"
+model_path = args.model
 model = tf.keras.models.load_model(model_path)
 
 # load class names
 labels = {
     0: "F20_20_horizontal",
     1: "M20_100_horizontal",
-    2: "M20_horizontal",
-    3: "M20_vertical",
-    4: "M30_horizontal",
-    5: "M30_vertical",
-    6: "R20_horizontal",
-    7: "R20_vertical",
-    8: "S40_40_horizontal",
-    9: "S40_40_virtical",
+    2: "M20_30_horizontal",
+    3: "M20_30_vertical",
+    4: "R20_horizontal",
+    5: "R20_vertical",
+    6: "S40_40_horizontal",
+    7: "S40_40_virtical",
 }
 
 
