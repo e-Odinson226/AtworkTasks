@@ -188,9 +188,7 @@ def contour_depth_value(depth_frame, contour, demo_frame=None, scale=0.3):
     return mask
 
 
-def config_d435(config):
-    pipeline.start(config)
-
+def config_d435():
     # Get device product line for setting a supporting resolution
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
     pipeline_profile = config.resolve(pipeline_wrapper)
@@ -213,23 +211,48 @@ def config_d435(config):
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
 
+def config_sr300():
+    # Get device product line for setting a supporting resolution
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+    device_product_line = str(device.get_info(rs.camera_info.product_line))
+
+    found_rgb = False
+    for s in device.sensors:
+        if s.get_info(rs.camera_info.name) == "RGB Camera":
+            found_rgb = True
+            # print("Depth camera with Color sensor")
+            break
+    if not found_rgb:
+        print("The demo requires Depth camera with Color sensor")
+        exit(0)
+
+    # Configure the pipeline to stream the depth stream
+    # Change this parameters according to the recorded bag file resolution
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+
+
 try:
     pipeline = rs.pipeline()
     config = rs.config()
+    profile = pipeline.start(config)
 
     # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
     if args.input == "d435":
-        config_d435(config)
+        config_d435()
     elif args.input == "sr300":
+        config_sr300()
+    else:
         config.enable_device_from_file(args.input)
 
-    # Start streaming from file
     # profile = pipeline.start(config)
 
     # Getting the depth sensor's depth scale (see rs-align example for explanation)
-    # depth_sensor = profile.get_device().first_depth_sensor()
-    # depth_scale = depth_sensor.get_depth_scale()
-    # print("Depth Scale is: ", depth_scale)
+    depth_sensor = profile.get_device().first_depth_sensor()
+    depth_scale = depth_sensor.get_depth_scale()
+    print("Depth Scale is: ", depth_scale)
 
     # We will be removing the background of objects more than
     #  clipping_distance_in_meters meters away
@@ -323,7 +346,7 @@ if __name__ == "__main__":
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         # show boundig_boxes
         bounding_boxes = extract_bbox(processed_frame, depth_image, 400, bgr_image)
-        print(len(bounding_boxes))
+        # print(len(bounding_boxes))
         for i, bbox in enumerate(bounding_boxes):
             # croped_bbox = frame[y:y+h, x:x+w]
             croped_bbox = bgr_image[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
@@ -336,7 +359,7 @@ if __name__ == "__main__":
             img_array = tf.keras.utils.img_to_array(bbox_resized)
             img_array = tf.expand_dims(img_array, 0)  # Create a batch
 
-            predict = np.argmax(model.predict(img_array))
+            predict = np.argmax(model.predict(img_array, verbose=None))
 
             # print(f"label_pred:{labels[predict]} pred:{predict}")
             # print(predict)
