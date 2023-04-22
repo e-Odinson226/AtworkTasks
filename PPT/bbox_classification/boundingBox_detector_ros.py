@@ -234,25 +234,29 @@ def config_sr300():
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
 
-# convert_cm2pixle:
+# cm_to_pixel:
 #   TAKES [ dimention(dimention of object in cm:[width, height]) ],
 #           lens( camera lens specifications:[focal_length, pixel_pitch, lens_distance])]
 #   DOES [  1-l1_l2) read dimention values from dimention variable to seperate variables
 #           2-l3_l8) calculate width and height in pixels from this formula:
 #                       pixels = real_distance * lens['focal_length'] / (lens['pixel_pitch'] * lens['lens_distance']) ]
 #   RETURNS [   dict:[width: width on pixels, height: height in pixels]   ]
-def convert_cm2pixle(real_distance, lens):
-    dim = (
-        real_distance
+def cm_to_pixel(real_length, lens):
+    pixel_length = (
+        real_length
         * lens["focal_length"]
         / (lens["pixel_pitch"] * lens["lens_distance"])
     )
-    return int(dim)
+    return int(pixel_length)
 
 
-def check_area(frame):
-    grayed_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    cv.imshow("grayed_frame", grayed_frame)
+def pixle_to_cm(pixel_length, lens):
+    real_length = (
+        pixel_length
+        * (lens["pixel_pitch"] * lens["lens_distance"])
+        / lens["focal_length"]
+    )
+    return int(real_length)
 
 
 try:
@@ -340,6 +344,7 @@ if __name__ == "__main__":
 
     lens = {"focal_length": 1.88, "pixel_pitch": 0.20, "lens_distance": 0.29}
     dim = 13.5
+    pixel_dimention = cm_to_pixel(dim, lens)
 
     # width = dimention["width"]
     # height = dimention["height"]
@@ -353,7 +358,6 @@ if __name__ == "__main__":
 
     # Streaming loop
     while True:
-        dimention = convert_cm2pixle(dim, lens)
         # print(f"dimention:{dimention}")
 
         frames = pipeline.wait_for_frames()
@@ -384,7 +388,7 @@ if __name__ == "__main__":
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         # show boundig_boxes
         bounding_boxes = extract_bbox(
-            processed_frame, depth_image, dimention, bgr_image
+            processed_frame, depth_image, pixel_dimention, bgr_image
         )
         # print(len(bounding_boxes))
         for i, bbox in enumerate(bounding_boxes):
@@ -408,6 +412,7 @@ if __name__ == "__main__":
                     cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU,
                 )
                 white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
+
                 # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
                 # print(f"white/All {white_pixels_ratio}")
 
@@ -425,7 +430,7 @@ if __name__ == "__main__":
                 )
                 white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
                 # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
-                print(f"white/All {white_pixels_ratio}")
+                # print(f"white/All {white_pixels_ratio}")
 
                 if white_pixels_ratio < 0.09:
                     predicted_class = "M20_horizontal"
@@ -441,7 +446,7 @@ if __name__ == "__main__":
                 )
                 white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
                 # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
-                print(f"white/All {white_pixels_ratio}")
+                # print(f"white/All {white_pixels_ratio}")
 
                 if white_pixels_ratio < 0.20:
                     predicted_class = "F20_20_horizontal"
