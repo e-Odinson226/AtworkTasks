@@ -397,44 +397,78 @@ if __name__ == "__main__":
             img_array = tf.keras.utils.img_to_array(bbox_resized)
             img_array = tf.expand_dims(img_array, 0)  # Create a batch
 
-            predict = np.argmax(model.predict(img_array, verbose=None))
+            # predict = np.argmax(model.predict(img_array, verbose=None))
+            predicted_class = labels[np.argmax(model.predict(img_array, verbose=None))]
 
-            if labels[predict] == "M20_30_vertical":
+            if predicted_class == "M20_30_vertical":
                 _, binary_frame = cv.threshold(
                     cv.cvtColor(croped_bbox, cv.COLOR_BGR2GRAY),
                     0,
                     255,
                     cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU,
                 )
+                white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
+                # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
+                # print(f"white/All {white_pixels_ratio}")
 
-                print("----------------------")
-                number_of_white_pix = np.sum(binary_frame == 255)
-                number_of_pix = np.sum(binary_frame)
-                print(f"white/all {number_of_white_pix}")
+                if white_pixels_ratio < 0.07:
+                    predicted_class = "M20_vertical"
+                elif white_pixels_ratio >= 0.07:
+                    predicted_class = "M30_vertical"
 
-                """ cv.putText(
-                    binary_frame,
-                    f"num_white_pixels:{num_white_pixels}",
-                    (binary_frame[0][0], binary_frame[0][1] + 30),
-                    cv.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (0, 0, 200),
-                    1,
-                ) """
-                # cv.imshow("grayed_frame", binary_frame)
-                # check_area(croped_bbox)
-            elif labels[predict] == "M20_30_horizontal":
-                pass
-            elif labels[predict] == "S40_40_horizontal":
-                pass
-            elif labels[predict] == "F20_20_horizontal":
-                pass
+            elif predicted_class == "M20_30_horizontal":
+                _, binary_frame = cv.threshold(
+                    cv.cvtColor(croped_bbox, cv.COLOR_BGR2GRAY),
+                    0,
+                    255,
+                    cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU,
+                )
+                white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
+                # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
+                print(f"white/All {white_pixels_ratio}")
+
+                if white_pixels_ratio < 0.09:
+                    predicted_class = "M20_horizontal"
+                elif white_pixels_ratio >= 0.09:
+                    predicted_class = "M30_horizontal"
+
+            elif predicted_class == "S40_40_horizontal":
+                _, binary_frame = cv.threshold(
+                    cv.cvtColor(croped_bbox, cv.COLOR_BGR2GRAY),
+                    0,
+                    255,
+                    cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU,
+                )
+                white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
+                # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
+                print(f"white/All {white_pixels_ratio}")
+
+                if white_pixels_ratio < 0.20:
+                    predicted_class = "F20_20_horizontal"
+                elif white_pixels_ratio >= 0.20:
+                    predicted_class = "S40_40_horizontal"
+
+            elif predicted_class == "F20_20_horizontal":
+                _, binary_frame = cv.threshold(
+                    cv.cvtColor(croped_bbox, cv.COLOR_BGR2GRAY),
+                    0,
+                    255,
+                    cv.ADAPTIVE_THRESH_GAUSSIAN_C + cv.THRESH_OTSU,
+                )
+                white_pixels_ratio = np.sum(binary_frame == 255) / binary_frame.size
+                # print(f"whites: {np.sum(binary_frame == 255)}, size: {binary_frame.size}" )
+                # print(f"white/All {white_pixels_ratio}")
+
+                if white_pixels_ratio < 0.2:
+                    predicted_class = "F20_20_horizontal"
+                elif white_pixels_ratio >= 0.2:
+                    predicted_class = "S40_40_horizontal"
 
             # score = tf.nn.softmax(predict)
 
             cv.putText(
                 bgr_image,
-                f"{labels[predict]}",
+                f"{predicted_class}",
                 # f"{labels[predict]} , {(100 * np.max(score)):.2f}",
                 (bbox[0][0], bbox[0][1] + 30),
                 cv.FONT_HERSHEY_SIMPLEX,
