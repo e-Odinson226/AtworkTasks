@@ -70,7 +70,6 @@ def process(
 
 
 def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
-    bbox_list = []
     contours, hierarchy = cv.findContours(
         frame,
         cv.RETR_EXTERNAL,
@@ -112,12 +111,27 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
                     # print(f"[(x, y), (x + w, y + h)]: {[(x, y), (x + w, y + h)]}")
                     # print(f"condition: {sum(1 for n in [x, y] if n>0)}")
 
-                    bbox_list.append([(x, y), (x + w, y + h)])
+                    # TODO: GET THE MOST CENTERED BBOX
+                    bbox_width_center = x + (w // 2)
+                    frame_width_center = frame.shape[1] // 2
+                    width_center_offset = 8 * frame.shape[1] // 100
+
+                    print(
+                        f"bbox_width_center:{bbox_width_center}| frame_width_center:{frame_width_center}"
+                    )
+
+                    if (
+                        (frame_width_center - width_center_offset)
+                        <= bbox_width_center
+                        <= (frame_width_center + width_center_offset)
+                    ):
+                        ret_bbox = [(x, y), (x + w, y + h)]
+
                 # cv.circle(draw_canvas, (cX, cY), 7, (255, 255, 255), -1)
                 # cv.putText(draw_canvas, "center", (cX - 20, cY - 20),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     # cv.drawContours(rgb_image, contours, -1, (0, 0, 255), 2)
-    return bbox_list
+    return ret_bbox
     # if len(bbox_list) !=0:
 
 
