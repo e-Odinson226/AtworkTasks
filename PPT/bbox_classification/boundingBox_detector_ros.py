@@ -70,6 +70,7 @@ def process(
 
 
 def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
+    ret_bbox = None
     contours, hierarchy = cv.findContours(
         frame,
         cv.RETR_EXTERNAL,
@@ -116,15 +117,18 @@ def extract_bbox(frame, depth_frame, bbox_dim, draw_canvas):
                     frame_width_center = frame.shape[1] // 2
                     width_center_offset = 8 * frame.shape[1] // 100
 
-                    print(
-                        f"bbox_width_center:{bbox_width_center}| frame_width_center:{frame_width_center}"
-                    )
+                    # print(
+                    #    f"bbox_width_center:{bbox_width_center}| frame_width_center:{frame_width_center}"
+                    # )
 
                     if (
                         (frame_width_center - width_center_offset)
                         <= bbox_width_center
                         <= (frame_width_center + width_center_offset)
                     ):
+                        cv.rectangle(
+                            draw_canvas, (x, y), (x + w, y + h), (0, 200, 220), 4
+                        )
                         ret_bbox = [(x, y), (x + w, y + h)]
 
                 # cv.circle(draw_canvas, (cX, cY), 7, (255, 255, 255), -1)
@@ -401,13 +405,15 @@ if __name__ == "__main__":
 
         # /////////////////////////////////  Find contours and Draw /////////////////////////////////
         # show boundig_boxes
-        bounding_boxes = extract_bbox(
+        bounding_box = extract_bbox(
             processed_frame, depth_image, pixel_dimention, bgr_image
         )
-
-        for i, bbox in enumerate(bounding_boxes):
+        if bounding_box != None:
             # croped_bbox = frame[y:y+h, x:x+w]
-            croped_bbox = bgr_image[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
+            croped_bbox = bgr_image[
+                bounding_box[0][1] : bounding_box[1][1],
+                bounding_box[0][0] : bounding_box[1][0],
+            ]
 
             # Classify:
             bbox_resized = cv.resize(croped_bbox, (224, 224))
@@ -485,13 +491,13 @@ if __name__ == "__main__":
 
             # score = tf.nn.softmax(predict)
 
-            area = (bbox[1][0] - bbox[0][0]) * (bbox[1][1] - bbox[0][1])
+            # area = (bbox[1][0] - bbox[0][0]) * (bbox[1][1] - bbox[0][1])
             cv.putText(
                 bgr_image,
                 f"{predicted_class}",
                 # f"{bbox[0][1]} : {bbox[1][1]}, {bbox[0][0]} : {bbox[1][0]}",
                 # f"{labels[predict]} , {(100 * np.max(score)):.2f}",
-                (bbox[0][0], bbox[0][1] + 30),
+                (bounding_box[0][0], bounding_box[0][1] + 30),
                 cv.FONT_HERSHEY_SIMPLEX,
                 1,
                 (0, 0, 0),
