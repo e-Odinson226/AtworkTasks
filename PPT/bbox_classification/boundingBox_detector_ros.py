@@ -390,7 +390,7 @@ if __name__ == "__main__":
         bounding_boxes = extract_bbox(
             processed_frame, depth_image, pixel_dimention, bgr_image
         )
-        # print(len(bounding_boxes))
+
         for i, bbox in enumerate(bounding_boxes):
             # croped_bbox = frame[y:y+h, x:x+w]
             croped_bbox = bgr_image[bbox[0][1] : bbox[1][1], bbox[0][0] : bbox[1][0]]
@@ -471,15 +471,17 @@ if __name__ == "__main__":
 
             # score = tf.nn.softmax(predict)
 
+            area = (bbox[1][0] - bbox[0][0]) * (bbox[1][1] - bbox[0][1])
             cv.putText(
                 bgr_image,
                 f"{predicted_class}",
+                # f"{bbox[0][1]} : {bbox[1][1]}, {bbox[0][0]} : {bbox[1][0]}",
                 # f"{labels[predict]} , {(100 * np.max(score)):.2f}",
                 (bbox[0][0], bbox[0][1] + 30),
                 cv.FONT_HERSHEY_SIMPLEX,
                 1,
                 (0, 0, 0),
-                1,
+                3,
             )
 
         # /////////////////////////////////  Find corners /////////////////////////////////
@@ -489,7 +491,7 @@ if __name__ == "__main__":
 
         cv.putText(
             bgr_image,
-            f"fps:{int(fps)}",
+            f"fps:{int(fps)}\n{bgr_image.shape}",
             (5, 30),
             cv.FONT_HERSHEY_SIMPLEX,
             1,
