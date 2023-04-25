@@ -229,6 +229,13 @@ def config_d435():
     config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
 
 
+def config_bagfile(input_address):
+    config.enable_device_from_file(args.input)
+    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+    pipeline_profile = config.resolve(pipeline_wrapper)
+    device = pipeline_profile.get_device()
+
+
 def config_sr300():
     # Get device product line for setting a supporting resolution
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
@@ -280,7 +287,6 @@ def pixle_to_cm(pixel_length, lens):
 try:
     pipeline = rs.pipeline()
     config = rs.config()
-    profile = pipeline.start(config)
 
     # Tell config that we will use a recorded device from file to be used by the pipeline through playback.
     if args.input == "d435":
@@ -288,9 +294,9 @@ try:
     elif args.input == "sr300":
         config_sr300()
     else:
-        config.enable_device_from_file(args.input)
+        config_bagfile(args.input)
 
-    # profile = pipeline.start(config)
+    profile = pipeline.start(config)
 
     # Getting the depth sensor's depth scale (see rs-align example for explanation)
     depth_sensor = profile.get_device().first_depth_sensor()
