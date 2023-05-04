@@ -6,4 +6,5 @@ __pycache__
 *.jpg
 *.avi
 *.vscode
+.ipynb_checkpoints
 *.zip
