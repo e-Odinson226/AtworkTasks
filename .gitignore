@@ -8,3 +8,5 @@ __pycache__
 *.vscode
 .ipynb_checkpoints
 *.zip
+logs
+saved_models
