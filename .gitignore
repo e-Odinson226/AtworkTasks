@@ -9,4 +9,4 @@ __pycache__
 .ipynb_checkpoints
 *.zip
 logs
-saved_models
+saved_model
