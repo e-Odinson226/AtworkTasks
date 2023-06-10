@@ -7,3 +7,7 @@ __pycache__
 *.avi
 *.vscode
 *.zip
+PPT/bbox_classification/logs/*
+PPT/logs/*
+PPT/PPT_bbox_classifier/saved_model
+.ipynb_checkpoints
