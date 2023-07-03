@@ -3,7 +3,7 @@ ImageDataset*
 /dataset/*
 test_images*
 __pycache__
-*.jpg
+#*.jpg
 *.avi
 *.vscode
 <<<<<<< HEAD
